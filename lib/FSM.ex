@@ -30,11 +30,12 @@ defmodule FSM do
 		get_orders(heisPID)
 	end
 
-	#def fsm(state) do
-	#	case state do
-	#		:idle ->
-	#			floors = [0, 1, 2, 3]
-	#			button_types = [:hall_up, :hall_down, :cab]		
-	#	end
-	#end
+	def fsm(state) do
+		case state do
+			:idle ->
+				floors = [0, 1, 2, 3]
+				button_types = [:hall_up, :hall_down, :cab]		
+				
+		end
+	end
 end

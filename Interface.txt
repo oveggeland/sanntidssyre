@@ -1,0 +1,47 @@
+Moduler:
+- Driver #GenServer
+- Watchdog #GenServer
+- Distributor
+- Order_list
+- FSM
+- Poller #Task
+
+
+Driver:
+- Alt er gitt til oss <3
+
+Watchdog: #GenServer
+- setOrderTimer(node, order)		#Call/Cast
+- orderComplete(node, order) 		#Call/Cast,  denne kommer alltid fra en annen maskin
+					#Hvis bestillingen ikke er gjennomført, kall WeGotsNewOrders(order)
+						#Dette er et problem hvis motoren ikke funker, da den samme heisen vil bli gitt beskjed om å ta bestillingen på nytt
+
+Distributor: #GenServer
+- WeGotsNewOrders(order) 	 	#Denne blir kalt fra poller eller Watchdog, når den oppdager button_press
+- get_bid(order)			#Dette må være en call siden vi returnerer verdier
+					#Hvis ordre allerede eksisterer vil vi returnere inf far get_bid()
+					#Get_bid returnerer en heltallsverdi som er høyere jo mer gunstig bestillingen er å gjennomføre
+					#Trenger tilstanden?
+
+- _Compare_bids()			#Sammenligner bids og bestemmer hvem som tar
+					#Sender ordre til riktig node
+					#Når add_order() returnerer :ok, start timer i watchdog, sett deretter bestillingslys(cast til driver)
+
+																						
+Order_list: 		#FIFO kø?
+- Add_order(order) 			#Call, legger til ordren. 
+- Get_order()				#Kalles fra FSM, returnerer den første bestillingen som skal tas
+- Delete_order(order)			#Fjerner gjennomført bestilling. #Cast
+- Check_orders(floor, direction)  	#Sjekker om noen skal plukkes opp
+
+
+FSM: #Genserver
+- getState()				#Called by Distributor to evaluate get_bid value
+- floorSensor(floor)			#Called by poller when a floor is reached (This is a classic cast)
+- _TellWatchDogsYouFinished(order) 	#Navnet sier seg selv
+
+
+Poller:
+- This has no interface <3 
+
+
