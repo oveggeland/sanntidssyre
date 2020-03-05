@@ -44,4 +44,6 @@ FSM: #Genserver
 Poller:
 - This has no interface <3 
 
-
+Ligths: 
+- setHallOrderLight(floor, type, value)	#Cast som kan kalles fra order-list når den mottar en ordre. Value er av eller på.
+- setDoorOpen()				#Cast som åpner døra i noen sekunder før automatisk lukker igjen.
