@@ -6,18 +6,26 @@ defmodule FSM do
 
 
   #User API
-  def start_link([heispid]) do
-    GenServer.start_link(__MODULE__, [heispid], name: __MODULE__)
+  def start_link([elevatorpid]) do
+    GenServer.start_link(__MODULE__, [elevatorpid], name: __MODULE__)
   end
 
-  def init([heispid]) do #structen vår er {floor(siste etasje), goal_floor, direction, heispid}
-    {:ok, {nil, nil, :stop, heispid}}
+  def init([elevatorpid]) do #structen er {floor(siste etasje), goal_floor, direction, elevatorpid}
+    {:ok, {nil, nil, :stop, elevatorpid}}
   end
 
   def get_state() do
     GenServer.call(__MODULE__, :get_state)
   end
 
+  def drive_elevator(direction) do
+    GenServer.cast(__MODULE__, {:drive_elevator, direction})
+  end
+
+  def open_and_close_door(elevatorpid) do
+    Driver.set_door_open_light(elevatorpid, :on)
+    spawn(fn -> :timer.sleep(door_open_time()); close_door() end)
+  end
 
   def update_floor(floor) do
     GenServer.cast(__MODULE__, {:update, floor})
@@ -38,45 +46,53 @@ defmodule FSM do
 
   #Cast handles
   def handle_cast({:update, floor}, state) do
-    {old_floor, old_goal_floor, old_direction, heispid} = state
-   # {_dontcare, goal_floor, direction, heispid} = state
-    Driver.set_floor_indicator(heispid, floor);
+    {old_floor, old_goal_floor, old_direction, elevatorpid} = state
+   # {_dontcare, goal_floor, direction, elevatorpid} = state
+    Driver.set_floor_indicator(elevatorpid, floor);
     new_state = cond do
       old_goal_floor == floor ->
         IO.puts("At goal floor")
-        Driver.set_motor_direction(heispid, :stop)
-        Driver.set_door_open_light(heispid, :on)
-        spawn(fn -> :timer.sleep(door_open_time()); close_door() end)
+        drive_elevator(:stop)
+        open_and_close_door(elevatorpid)
         #_clear_watchdog(order)
-        {floor, :nil, :stop, heispid}
+        {floor, :nil, :stop, elevatorpid}
       true ->
         IO.puts("Default")
-        {floor, old_goal_floor, old_direction, heispid}
+        {floor, old_goal_floor, old_direction, elevatorpid}
       end
-    #{:noreply, {floor, goal_floor, direction, heispid}}
+    #{:noreply, {floor, goal_floor, direction, elevatorpid}}
     {:noreply, new_state}
   end
 
   def handle_cast({:update_goal, goal_floor}, state) do
-    {floor, _dontcare, direction, heispid} = state
-    {:noreply, {floor, goal_floor, direction, heispid}}
+    {floor, _dontcare, direction, elevatorpid} = state
+    {:noreply, {floor, goal_floor, direction, elevatorpid}}
+  end
+
+  def handle_cast({:drive_elevator, direction}, state) do
+    {floor, goal_floor,__, elevatorpid} = state
+    Driver.set_motor_direction(elevatorpid, direction)
+    {:noreply, {floor, goal_floor, direction, elevatorpid}}
+  end
+
+  def handle_cast({:update_goal, goal_floor}, state) do
+    {floor, _dontcare, direction, elevatorpid} = state
+    {:noreply, {floor, goal_floor, direction, elevatorpid}}
   end
 
   def _clear_watchdog(order) do
     #Function is called when order is completed
-    #Need to call a call to watchdog GenServers.
+    #Need to call a call to watchdog GenServer.
+    #
     #orderComplete(self(), order)
   end
 
   def close_door do
-    {_,_,_,heispid} = get_state()
-    Driver.set_door_open_light(heispid, :off)
+    {_,_,_,elevatorpid} = get_state()
+    Driver.set_door_open_light(elevatorpid, :off)
   end
 
-  def drive(direction) do
-    {_,_,_,heispid} = get_state()
-    Driver.set_motor_direction(heispid, direction)
-  end
+
 
 
 
