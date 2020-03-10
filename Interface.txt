@@ -27,9 +27,9 @@ Distributor: #GenServer
 					#Sender ordre til riktig node
 					#Når add_order() returnerer :ok, start timer i watchdog, sett deretter bestillingslys(cast til driver)
 
-																						
+
 Order_list: 		#FIFO kø?
-- Add_order(order) 			#Call, legger til ordren. 
+- Add_order(order) 			#Call, legger til ordren.
 - Get_order()				#Kalles fra FSM, returnerer den første bestillingen som skal tas
 - Delete_order(order)			#Fjerner gjennomført bestilling. #Cast
 - Check_orders(floor, direction)  	#Sjekker om noen skal plukkes opp
@@ -37,13 +37,17 @@ Order_list: 		#FIFO kø?
 
 FSM: #Genserver
 - getState()				#Called by Distributor to evaluate get_bid value
-- floorSensor(floor)			#Called by poller when a floor is reached (This is a classic cast)
-- _TellWatchDogsYouFinished(order) 	#Navnet sier seg selv
+- update_floor(floor)			#Called by poller when a floor is reached (This is a classic cast)
+- _clear_watchdog(order) 	#Navnet sier seg selv
 
 
 Poller:
-- This has no interface <3 
+- This has no interface <3
 
-Ligths: 
+Ligths:
 - setHallOrderLight(floor, type, value)	#Cast som kan kalles fra order-list når den mottar en ordre. Value er av eller på.
 - setDoorOpen()				#Cast som åpner døra i noen sekunder før automatisk lukker igjen.
+
+Tanker:
+- Skal vi ha en funksjon som gjør at FSM kan sjekke om det er noen som skal samme veien
+    når den passerer en etasje?
