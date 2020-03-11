@@ -7,7 +7,7 @@ defmodule Orders do
 	end
 
 	def init([]) do
-		{:ok, [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}
+		{:ok, []}
 	end
 
 	def add_order(new_order) do
@@ -25,7 +25,7 @@ defmodule Orders do
 	end
 
 	def check_orders(floor, direction) do
-		GenServer.call(__MODULE__, {:chech_orders, floor, direction})
+		GenServer.call(__MODULE__, {:check_orders, floor, direction})
 	end
 
 
@@ -34,22 +34,20 @@ defmodule Orders do
 		{:reply, orders, orders}
 	end
 
-	def handle_call(:check_orders, _floor, _direction, _from, orders) do
-		{:reply,"This is not implemented yet", orders}
-	end
-	
-	def _get_index({floor, button_type} = _order) do
-		button_type_map = %{:hall_up => 0, :hall_down => 1, :cab => 2}
-		_index = 3*floor + Map.get(button_type_map, button_type)
+	def handle_call({:check_orders, floor, direction}, _from, orders) do
+		direction_map = %{:up => :hall_up, :down => :hall_down}
+		val1 = Enum.filter(orders, fn order -> order == {floor, direction_map[direction]} end)
+		val2 = Enum.filter(orders, fn order -> order == {floor, :cab} end)
+		{:reply, val1 != [] or val2 != [], orders}
 	end
 
 	def handle_cast({:add_order, new_order}, orders) do
-		orders = List.replace_at(orders, _get_index(new_order), 1)
+		orders = [new_order | orders]
 		{:noreply, orders}
 	end
 
 	def handle_cast({:delete_order, order}, orders) do
-		orders = List.replace_at(orders, _get_index(order), 0)
+		orders = List.delete(orders, order)
 		{:noreply, orders}
 	end
 
