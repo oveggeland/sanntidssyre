@@ -18,8 +18,8 @@ defmodule Watchdog do
 
 	### User Interface ###
 
-	def set_order_timer(new_order) do
-		GenServer.cast(__MODULE__, {:set_order_timer, new_order})		
+	def spawn_watchdog(new_order) do
+		GenServer.cast(__MODULE__, {:spawn_watchdog, new_order})		
 	end
 	
 	def get_timers() do
@@ -32,7 +32,7 @@ defmodule Watchdog do
 
 	### Call handlers ###
 
-	def handle_call(:get_timers, _from, orders) do
+	def handle_call(:get_timers, _from, ) do
 		{:reply, orders, orders}
 	end
 
@@ -40,44 +40,36 @@ defmodule Watchdog do
 
 
 
-	def handle_cast({:set_order_timer, new_order}, timers) do
+	def handle_cast({:spawn_watchdog, new_order}, watchdog_pids) do
 		watchdog_pid = spawn fn -> _watchdog(new_order) end
 		IO.puts("ferdig spawnet")
-		timers = [watchdog_pid | timers]
+		timers = [watchdog_pid | watchdog_pids]
 		{:noreply, timers}
 	end
 
-	def handle_cast({:order_complete, completed_order}, timers) do
+	def handle_cast({:kill_watchdog, completed_order}, watchdog_pids) do
 		#Regner med det er en mer elegant funksjon enn filter som kan brukes :) 
-		Enum.filter(timers, fn timer -> send(timer, {:kill, completed_order}) end)
-		{:noreply, timers}
+		Enum.each(watchdog_pids, fn watchdog_pid -> send(watchdog_pid, {:kill, completed_order}) end)
+		{:noreply, watchdog_pids}
 	end
 
-	def handle_cast({:delete_watchdog_pid, pid}, timers) do
-		timers = List.delete(timers, pid)
-		{:noreply, timers}
+	def handle_cast({:delete_watchdog_pid, watchdog_pid}, watchdog_pids) do
+		watchdog_pids = List.delete(watchdog_pids, watchdog_pid)
+		{:noreply, watchdog_pids}
 	end
 
-	### Help functions ###	
+
+	### THE watchdog ###	
 
 	def _watchdog(watch_order) do
 		Logger.info("Watchdog succesfully spawned")
 		receive do
-			{:kill, order} ->
-				if order == watch_order do
-					Logger.info("Process is commiting suicide")
-					GenServer.cast(__MODULE__, {:delete_watchdog_pid, self()})
-					Process.exit(self(), :kill)
-				end
+			{:kill, ^watch_order} ->
+				Logger.info("Process is commiting suicide")
+				GenServer.cast(__MODULE__, {:delete_watchdog_pid, self()})
 		after
 			30_000 -> 
 				Logger.info("Watchdog timed out")
-				Process.exit(self(), :kill)
 		end
 	end
 end
-
-
-#Her er planen, add_order spawner en watchdog og legger PIDen dens inn i GenServeren. 
-
-#Hver watchdog venter på en beskjed om kill, receive :kill -> commit suicide. 
