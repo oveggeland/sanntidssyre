@@ -24,4 +24,21 @@ defmodule HEIS do
 		end
 		update_floor_lights heisPID
 	end
+
+	def call_elevator heisPID
+			
+	end
+	
+	def _go_to_floor heisPID, floor do
+		position = Driver.get_floor_sensor_state heisPID
+		case position do
+			position > floor ->
+				Driver.set_motor_direction heisPID, :down
+			position < floor ->
+				Driver.set_motor_direction heisPID, :up
+			position == floor ->
+				Driver.set_motor_direction heisPID, :stop
+			_ ->
+				:between_floors
+		end
 end

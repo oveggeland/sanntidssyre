@@ -10,6 +10,9 @@ defmodule Orders do
 		{:ok, []}
 	end
 
+
+	### User Interface ###
+
 	def add_order(new_order) do
 		GenServer.cast(__MODULE__, {:add_order, new_order})
 	end
@@ -17,8 +20,6 @@ defmodule Orders do
 	def delete_order(order) do
 		GenServer.cast(__MODULE__, {:delete_order, order})
 	end
-
-	
 
 	def get_orders() do
 		GenServer.call(__MODULE__, :get_orders)
@@ -29,6 +30,7 @@ defmodule Orders do
 	end
 
 
+	### Call handlers ###
 
 	def handle_call(:get_orders, _from, orders) do
 		{:reply, orders, orders}
@@ -36,17 +38,24 @@ defmodule Orders do
 
 	def handle_call({:check_orders, floor, direction}, _from, orders) do
 		direction_map = %{:up => :hall_up, :down => :hall_down}
-		val1 = Enum.filter(orders, fn order -> order == {floor, direction_map[direction]} end)
-		val2 = Enum.filter(orders, fn order -> order == {floor, :cab} end)
-		{:reply, val1 != [] or val2 != [], orders}
+		direction_test = Enum.filter(orders, fn order -> order == {floor, direction_map[direction]} end)
+		cab_test = Enum.filter(orders, fn order -> order == {floor, :cab} end)
+		{:reply, direction_test != [] or cab_test != [], orders}
 	end
 
+	### Cast handlers ###
+
 	def handle_cast({:add_order, new_order}, orders) do
+		orders = List.delete(orders, new_order)
+		{floor, type} = new_order
+		Logger.info("Order: {#{floor}, #{type}} added")
 		orders = [new_order | orders]
 		{:noreply, orders}
 	end
 
 	def handle_cast({:delete_order, order}, orders) do
+		{floor, type} = order
+		Logger.info("Order: {#{floor}, #{type}} added")
 		orders = List.delete(orders, order)
 		{:noreply, orders}
 	end
