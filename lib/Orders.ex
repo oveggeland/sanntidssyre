@@ -7,7 +7,7 @@ defmodule Orders do
 	end
 
 	def init([]) do
-		{:ok, []}
+		{:ok, MapSet.new()}
 	end
 
 
@@ -38,25 +38,23 @@ defmodule Orders do
 
 	def handle_call({:check_orders, floor, direction}, _from, orders) do
 		direction_map = %{:up => :hall_up, :down => :hall_down}
-		direction_test = Enum.filter(orders, fn order -> order == {floor, direction_map[direction]} end)
-		cab_test = Enum.filter(orders, fn order -> order == {floor, :cab} end)
-		{:reply, direction_test != [] or cab_test != [], orders}
+		map_set_test = MapSet.new([{floor, :cab}, {floor, direction_map[direction]}])
+		{:reply, !MapSet.disjoint?(map_set_test, orders), orders}
 	end
 
 	### Cast handlers ###
 
 	def handle_cast({:add_order, new_order}, orders) do
-		orders = List.delete(orders, new_order)
 		{floor, type} = new_order
 		Logger.info("Order: {#{floor}, #{type}} added")
-		orders = [new_order | orders]
+		orders = MapSet.put(orders, new_order)
 		{:noreply, orders}
 	end
 
 	def handle_cast({:delete_order, order}, orders) do
 		{floor, type} = order
 		Logger.info("Order: {#{floor}, #{type}} added")
-		orders = List.delete(orders, order)
+		orders = MapSet.delete(orders, order)
 		{:noreply, orders}
 	end
 
