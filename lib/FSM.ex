@@ -1,5 +1,6 @@
 defmodule FSM do
   use GenServer
+  require Logger
 
   #Constants
   def door_open_time, do: 3000
@@ -22,10 +23,6 @@ defmodule FSM do
     GenServer.cast(__MODULE__, {:drive_elevator, direction})
   end
 
-  def open_and_close_door(elevatorpid) do
-    Driver.set_door_open_light(elevatorpid, :on)
-    spawn(fn -> :timer.sleep(door_open_time()); close_door() end)
-  end
 
   def update_floor(floor) do
     GenServer.cast(__MODULE__, {:update, floor})
@@ -39,6 +36,14 @@ defmodule FSM do
     GenServer.call(__MODULE__, :get_state)
   end
 
+  def run_FSM() do
+    GenServer.cast(__MODULE__, :run_FSM)
+    Process.sleep(1000)
+    Logger.info("Tic")
+    run_FSM()
+  end
+
+
   #Call handles
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
@@ -46,21 +51,15 @@ defmodule FSM do
 
   #Cast handles
   def handle_cast({:update, floor}, state) do
-    {old_floor, old_goal_floor, old_direction, elevatorpid} = state
-   # {_dontcare, goal_floor, direction, elevatorpid} = state
+    {_, old_goal_floor, old_direction, elevatorpid} = state
     Driver.set_floor_indicator(elevatorpid, floor);
     new_state = cond do
       old_goal_floor == floor ->
-        IO.puts("At goal floor")
-        drive_elevator(:stop)
-        open_and_close_door(elevatorpid)
-        #_clear_watchdog(order)
-        {floor, :nil, :stop, elevatorpid}
+        _reach_goal_floor(elevatorpid, floor)
       true ->
-        IO.puts("Default")
+        Logger.info("Default")
         {floor, old_goal_floor, old_direction, elevatorpid}
       end
-    #{:noreply, {floor, goal_floor, direction, elevatorpid}}
     {:noreply, new_state}
   end
 
@@ -75,9 +74,17 @@ defmodule FSM do
     {:noreply, {floor, goal_floor, direction, elevatorpid}}
   end
 
-  def handle_cast({:update_goal, goal_floor}, state) do
-    {floor, _dontcare, direction, elevatorpid} = state
-    {:noreply, {floor, goal_floor, direction, elevatorpid}}
+  def handle_cast(:run_FSM, state) do
+    {current_floor, goal_floor, _, elevatorpid} = state
+    new_state = cond do
+      goal_floor == :nil -> #State is idle
+        #new_order = get_order()
+        #new_goal_floor = get_floor_from_order(order)
+        new_goal_floor = 2
+        new_direction =_handle_new_order(new_goal_floor, current_floor)
+        {current_floor, new_goal_floor, new_direction, elevatorpid}
+    end
+    {:noreply, new_state}
   end
 
   def _clear_watchdog(order) do
@@ -87,13 +94,39 @@ defmodule FSM do
     #orderComplete(self(), order)
   end
 
-  def close_door do
+  def _close_door do
     {_,_,_,elevatorpid} = get_state()
     Driver.set_door_open_light(elevatorpid, :off)
   end
 
+  def _open_and_close_door(elevatorpid) do
+    Driver.set_door_open_light(elevatorpid, :on)
+    spawn(fn -> :timer.sleep(door_open_time()); _close_door() end)
+  end
 
+  def _reach_goal_floor(elevatorpid, floor) do
+    Logger.info("At goal floor")
+    drive_elevator(:stop)
+    _open_and_close_door(elevatorpid)
+    #_clear_watchdog(order)
+    {floor, :nil, :stop, elevatorpid}
+  end
 
+  def _handle_new_order(new_goal_floor, current_floor) do
+    cond do
+      new_goal_floor > current_floor ->
+        drive_elevator(:up)
+        :up
+      new_goal_floor < current_floor ->
+        drive_elevator(:down)
+        :down
+      new_goal_floor == current_floor ->
+        :stop
+        #Do nothing
+      true ->
+        Logger.info("bu")
+    end
+  end
 
 
 #Denne kan vi legge et annet sted helst:)
