@@ -3,10 +3,10 @@ defmodule Watchdog do
 	require Logger
 	
 	#Constants
-	def order_time, do: 30000
+	@time_out 10000
 
 
-	def start_link([]) do
+	def start_link() do
 		GenServer.start_link(__MODULE__, [], name: __MODULE__)
 	end
 
@@ -63,9 +63,10 @@ defmodule Watchdog do
 		Logger.info("Watchdog succesfully spawned")
 		receive do
 			{:kill, ^watch_order} ->
-				Logger.info("Process is commiting suicide")
+				Logger.info("Watchdog terminating")
 		after
-			30_000 -> 
+			@time_out -> 
+				#Distributor.order_time_out(order)
 				Logger.info("Watchdog timed out")
 		end
 		GenServer.cast(__MODULE__, {:delete_watchdog_pid, self()})

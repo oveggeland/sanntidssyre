@@ -2,12 +2,12 @@ defmodule Orders do
 	use GenServer
 	require Logger
 	
-	def start_link([]) do
+	def start_link() do
 		GenServer.start_link(__MODULE__, [], name: __MODULE__)
 	end
 
 	def init([]) do
-		{:ok, MapSet.new()}
+		{:ok,[]} 
 	end
 
 
@@ -21,8 +21,13 @@ defmodule Orders do
 		GenServer.cast(__MODULE__, {:delete_order, order})
 	end
 
+	#### I believe this is a useless function, but it is nice for testing
 	def get_orders() do
 		GenServer.call(__MODULE__, :get_orders)
+	end
+
+	def get_next_order() do
+		GenServer.call(__MODULE__, :get_next_order)
 	end
 
 	def check_orders(floor, direction) do
@@ -36,25 +41,34 @@ defmodule Orders do
 		{:reply, orders, orders}
 	end
 
+	def handle_call(:get_next_order, _from, orders) do
+		{:reply, List.last(orders), orders}
+	end
+
 	def handle_call({:check_orders, floor, direction}, _from, orders) do
-		direction_map = %{:up => :hall_up, :down => :hall_down}
-		map_set_test = MapSet.new([{floor, :cab}, {floor, direction_map[direction]}])
-		{:reply, !MapSet.disjoint?(map_set_test, orders), orders}
+		dir_map = %{:up => :hall_up, :down => :hall_down}
+		disjoint_test = [{floor, :cab}, {floor, dir_map[direction]}] |> List.myers_difference(orders)
+		IO.inspect(disjoint_test)
+		{:reply, disjoint_test[:eq] != nil, orders}
 	end
 
 	### Cast handlers ###
 
 	def handle_cast({:add_order, new_order}, orders) do
-		{floor, type} = new_order
-		Logger.info("Order: {#{floor}, #{type}} added")
-		orders = MapSet.put(orders, new_order)
-		{:noreply, orders}
+		if List.delete(orders, new_order) == orders do
+			{floor, type} = new_order
+			Logger.info("Order: {#{floor}, #{type}} added")
+			orders = [new_order | orders]
+			{:noreply, orders}
+		else
+			{:noreply, orders}
+		end
 	end
 
 	def handle_cast({:delete_order, order}, orders) do
 		{floor, type} = order
-		Logger.info("Order: {#{floor}, #{type}} added")
-		orders = MapSet.delete(orders, order)
+		Logger.info("Order: {#{floor}, #{type}} deleted")
+		orders = List.delete(orders, order)
 		{:noreply, orders}
 	end
 
