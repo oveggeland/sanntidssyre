@@ -54,14 +54,14 @@ defmodule Orders do
 
 	### Cast handlers ###
 
-	def handle_cast({:add_order, new_order}, orders) do
+	def handle_call({:add_order, new_order}, _from, orders) do
 		if List.delete(orders, new_order) == orders do
 			{floor, type} = new_order
 			Logger.info("Order: {#{floor}, #{type}} added")
 			orders = [new_order | orders]
-			{:noreply, orders}
+			{:reply, :order_added, orders}
 		else
-			{:noreply, orders}
+			{:reply, :order_added, orders}
 		end
 	end
 

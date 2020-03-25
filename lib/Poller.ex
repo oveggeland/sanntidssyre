@@ -1,4 +1,4 @@
-defmodule OskarTest do
+defmodule Poller do
 	use Task
 	require Orders
 

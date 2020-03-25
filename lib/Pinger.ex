@@ -6,6 +6,14 @@ defmodule Cluster do
 
 
 	def start_link([name]) do
+
+		### Spawning all modules ###
+		FSM_TEST.start_link()
+		Distributor.start_link([])
+		Orders.start_link()
+
+
+
 		get_my_node_name(name) |> Node.start()
 		Node.set_cookie(:safari)
 		Task.start_link(fn -> connect_to_cluster(name) end)
@@ -26,7 +34,7 @@ defmodule Cluster do
 	end
 
 	def node_listener(socket) do
-		{:ok, {ip, port, data}} = :gen_udp.recv(socket, 0)
+		{:ok, {ip, _port, data}} = :gen_udp.recv(socket, 0)
 
 		name = data |> to_string()
 		node_name = name<>"@"<>(:inet.ntoa(ip) |> to_string())
