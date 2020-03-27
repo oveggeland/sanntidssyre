@@ -11,7 +11,7 @@ defmodule Cluster do
 		FSM_TEST.start_link()
 		Distributor.start_link([])
 		Orders.start_link()
-
+		#Watchdog.start_link()
 
 
 		get_my_node_name(name) |> Node.start()
