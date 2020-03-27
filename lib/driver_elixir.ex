@@ -94,7 +94,6 @@ defmodule Driver do
   end
 
 
-
   # Calls  ----------------------------------------------
   def handle_call {:get_order_button_state, floor, order_type}, _from, socket do
     :gen_tcp.send socket, [6, @button_map[order_type], floor, 0]
