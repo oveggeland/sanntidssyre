@@ -14,7 +14,7 @@ defmodule Orders do
 	### User Interface ###
 
 	def add_order(new_order) do
-		GenServer.cast(__MODULE__, {:add_order, new_order})
+		GenServer.call(__MODULE__, {:add_order, new_order})
 	end
 
 	def delete_order(order) do
