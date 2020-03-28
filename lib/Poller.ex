@@ -15,7 +15,7 @@ defmodule Poller do
 		:timer.sleep(50)
 		button_push = Driver.get_order_button_state(heisPID, floor, type)
 		if button_push == 1 do
-			Orders.add_order({floor, type})
+			Distributor.new_order({floor, type})
 			#### Add whatever happens when button is pushed ####
 		end
 		button_poller(heisPID, {floor, type})

@@ -2,7 +2,7 @@ defmodule Orders do
 	use GenServer
 	require Logger
 	
-	def start_link() do
+	def start_link([]) do
 		GenServer.start_link(__MODULE__, [], name: __MODULE__)
 	end
 
@@ -10,21 +10,8 @@ defmodule Orders do
 		{:ok,[]} 
 	end
 
-
-	### User Interface ###
-
-	def add_order(new_order) do
-		GenServer.call(__MODULE__, {:add_order, new_order})
-	end
-
-	def delete_order(order) do
-		GenServer.cast(__MODULE__, {:delete_order, order})
-	end
-
-	#### I believe this is a useless function, but it is nice for testing
-	def get_orders() do
-		GenServer.call(__MODULE__, :get_orders)
-	end
+	
+	### Functions to be used by FSM: ###
 
 	def get_next_order() do
 		GenServer.call(__MODULE__, :get_next_order)
@@ -35,6 +22,22 @@ defmodule Orders do
 	end
 
 
+
+	### Test functions ###
+
+	def add_order(new_order) do
+		GenServer.call(__MODULE__, {:add_order, new_order})
+	end
+
+	def delete_order(order) do
+		GenServer.cast(__MODULE__, {:delete_order, order})
+	end
+
+	def get_orders() do
+		GenServer.call(__MODULE__, :get_orders)
+	end
+
+	
 	### Call handlers ###
 
 	def handle_call(:get_orders, _from, orders) do
@@ -48,29 +51,20 @@ defmodule Orders do
 	def handle_call({:check_orders, floor, direction}, _from, orders) do
 		dir_map = %{:up => :hall_up, :down => :hall_down}
 		disjoint_test = [{floor, :cab}, {floor, dir_map[direction]}] |> List.myers_difference(orders)
-		IO.inspect(disjoint_test)
 		{:reply, disjoint_test[:eq] != nil, orders}
 	end
 
+	def handle_call({:add_order, new_order}, _from, orders) do
+		orders = [new_order | orders]
+		{:reply, :order_added, orders}
+	end
+
+
 	### Cast handlers ###
 
-	def handle_call({:add_order, new_order}, _from, orders) do
-		if List.delete(orders, new_order) == orders do
-			{floor, type} = new_order
-			Logger.info("Order: {#{floor}, #{type}} added")
-			orders = [new_order | orders]
-			{:reply, :order_added, orders}
-		else
-			{:reply, :order_added, orders}
-		end
-	end
-
 	def handle_cast({:delete_order, order}, orders) do
-		{floor, type} = order
-		Logger.info("Order: {#{floor}, #{type}} deleted")
-		orders = List.delete(orders, order)
+		IO.inspect(order)
+		orders = Enum.filter(orders, fn x -> x != order end)
 		{:noreply, orders}
 	end
-
-
 end
