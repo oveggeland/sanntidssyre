@@ -1,15 +1,16 @@
 defmodule Poller do
 	use Task
 	require Orders
+	require FSM
 
 	def start_link([heisPID]) do
 		buttons = get_all_buttons()
-		Enum.each(buttons, fn(button)-> 
-			Task.start_link(fn -> button_poller(heisPID, button) end) 
+		Enum.each(buttons, fn(button)->
+			Task.start_link(fn -> button_poller(heisPID, button) end)
 						end)
 		Task.start_link(fn -> floor_poller(heisPID) end)
 	end
-	
+
 
 	def button_poller(heisPID, {floor, type}) do
 		:timer.sleep(50)
@@ -20,19 +21,19 @@ defmodule Poller do
 		end
 		button_poller(heisPID, {floor, type})
 	end
-	
+
 	def floor_poller(heisPID) do
-		:timer.sleep(50)
+		:timer.sleep(500)
 		floor_sensor = Driver.get_floor_sensor_state(heisPID)
 		if floor_sensor != :between_floors do
-			IO.puts("Floor: #{floor_sensor}")
+                        #IO.puts("Floor: #{floor_sensor}")
+                        FSM.update_floor(floor_sensor)
 			#### Add whatever happens when floor sensor goes off! ####
 		end
-		floor_poller(heisPID)	
-	end	
-
-	defp get_all_buttons() do 
-	 	for floors <- 0..3, type <- [:cab, :hall_up, :hall_down] do {floors, type} end |> List.delete({0, :hall_down}) |> List.delete({3, :hall_up})
+		floor_poller(heisPID)
 	end
 
+	defp get_all_buttons() do
+	 	for floors <- 0..3, type <- [:cab, :hall_up, :hall_down] do {floors, type} end |> List.delete({0, :hall_down}) |> List.delete({3, :hall_up})
+	end
 end

@@ -39,7 +39,8 @@ defmodule FSM do
   def run_FSM() do
     GenServer.cast(__MODULE__, :run_FSM)
     Process.sleep(1000)
-    Logger.info("Tic")
+    {floor,goal,dir,_} = get_state()
+    Logger.info("#{floor}, #{goal}, #{dir}")
     run_FSM()
   end
 
@@ -57,7 +58,7 @@ defmodule FSM do
       old_goal_floor == floor ->
         _reach_goal_floor(elevatorpid, floor)
       true ->
-        Logger.info("Default")
+        #Logger.info("Default")
         {floor, old_goal_floor, old_direction, elevatorpid}
       end
     {:noreply, new_state}
@@ -80,9 +81,16 @@ defmodule FSM do
       goal_floor == :nil -> #State is idle
         #new_order = get_order()
         #new_goal_floor = get_floor_from_order(order)
-        new_goal_floor = 2
-        new_direction =_handle_new_order(new_goal_floor, current_floor)
-        {current_floor, new_goal_floor, new_direction, elevatorpid}
+        if Orders.get_next_order != :nil do
+          {new_goal_floor, _order_type} = Orders.get_next_order()
+          {current_floor, new_goal_floor, _handle_new_order(new_goal_floor, current_floor), elevatorpid}
+        else
+          {current_floor, :nil, :nil, elevatorpid}
+        end
+      true ->
+        :timer.sleep(200)
+        IO.puts("Do nothing")
+        {current_floor, goal_floor, :nil, elevatorpid}
     end
     {:noreply, new_state}
   end
