@@ -53,19 +53,21 @@ defmodule FSM do
   #Cast handles
   def handle_cast({:update, floor}, state) do
     {_, old_goal_floor, old_direction, elevatorpid} = state
+
     Driver.set_floor_indicator(elevatorpid, floor);
+
     new_state = cond do
       old_goal_floor == floor ->
         _reach_goal_floor(elevatorpid, floor)
       true ->
-        #Logger.info("Default")
         {floor, old_goal_floor, old_direction, elevatorpid}
       end
+
     {:noreply, new_state}
   end
 
   def handle_cast({:update_goal, goal_floor}, state) do
-    {floor, _dontcare, direction, elevatorpid} = state
+    {floor, _, direction, elevatorpid} = state
     {:noreply, {floor, goal_floor, direction, elevatorpid}}
   end
 
