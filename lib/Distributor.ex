@@ -23,7 +23,10 @@ defmodule Distributor do
 
 		#Tell all watchdogs to watch order, returns list of replies
 		{_replies, _} = GenServer.multi_call(Watchdog, {:spawn_watchdog, order})
+		
+		GenServer.abcast(Lights, {:set_order_light, order, :on})
 
+		
 		### TODO ###
 		#Implement what should happen if reply from Watchdog call is empty? No responders?
 		#Should action depend on whether or not the order is cab/call?
@@ -36,6 +39,9 @@ defmodule Distributor do
 		
 		### Casting to all nodes that Orders should delete order
 		GenServer.abcast(Orders, {:delete_order, order})
+
+		GenServer.abcast(Lights, {:set_order_light, order, :off})
+		
 
 		### Skru av ordrelys ###	
 	end		

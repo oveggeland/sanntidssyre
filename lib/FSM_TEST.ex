@@ -11,6 +11,9 @@ defmodule FSM_TEST do
                 Orders.start_link([])
                 FSM.start_link([elevatorpid])
                 Poller.start_link([elevatorpid])
+		Lights.start_link([elevatorpid])
+		Distributor.start_link([])
+		Watchdog.start_link([])
                 spawn(fn -> FSM.run_FSM end)
 		{:ok,0}
 	end
