@@ -1,7 +1,7 @@
 defmodule FSM_TEST do
 	use GenServer
 
-	def start_link() do
+	def start_link([]) do
 		GenServer.start_link(__MODULE__, [], name: __MODULE__)
 	end
 
@@ -15,14 +15,19 @@ defmodule FSM_TEST do
 		{:ok,0}
 	end
 
+
+
+###SET_STATE###
 	def set_state(number) do
 		GenServer.cast(__MODULE__, {:set_state, number})
 	end
 
-	def handle_cast({:set_state, number}, state) do
+	def handle_cast({:set_state, number}, _state) do
 		{:noreply, number}
 	end
 
+
+###GET_STATE###
 	def get_state() do
 		GenServer.call(__MODULE__, :get_state)
 	end

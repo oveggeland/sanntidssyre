@@ -8,10 +8,10 @@ defmodule Cluster do
 	def start_link([name]) do
 
 		### Spawning all modules ###
-		FSM_TEST.start_link()
 		Distributor.start_link([])
-		Orders.start_link()
-		#Watchdog.start_link()
+		FSM_TEST.start_link([])
+		Orders.start_link([])
+		Watchdog.start_link([])
 
 
 		get_my_node_name(name) |> Node.start()

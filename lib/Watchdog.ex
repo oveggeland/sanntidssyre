@@ -6,7 +6,7 @@ defmodule Watchdog do
 	@time_out 15000
 
 
-	def start_link() do
+	def start_link([]) do
 		GenServer.start_link(__MODULE__, [], name: __MODULE__)
 	end
 
@@ -30,13 +30,6 @@ defmodule Watchdog do
 	### Call handlers ###
 
 	def handle_call({:spawn_watchdog, order}, _from, watchdog_pids) do
-		Enum.each(watchdog_pids, fn(pid) -> send(pid, {:taken, self(), order}) end)
-		receive do
-			{:yes} ->
-				{:reply, :ok, watchdog_pids}
-					
-
-
 		pid = spawn(fn -> watchdog(order) end)
 		watchdog_pids = [pid | watchdog_pids]
 		{:reply, :ok, watchdog_pids}
@@ -58,21 +51,18 @@ defmodule Watchdog do
 	### THE watchdog ###	
 
 	defp watchdog(watch_order) do
+		#Avoiding race_conditions by adding a random offset to time_out_val	
+		time_out_val = @time_out + :rand.uniform(100)
 		receive do
 			{:kill, ^watch_order} ->
-				Logger.info("Watchdog terminating")
 				GenServer.cast(__MODULE__, {:delete_watchdog_pid, self()})
 
-			{:taken, from, ^watch_order} ->
-				send(from, :yes)
-				watchdog(watch_order)
-			
 		after
-			@time_out -> 
+			time_out_val ->
 				GenServer.abcast(Watchdog, {:kill_watchdog, watch_order})
 				Distributor.new_order(watch_order)
 				Logger.info("Watchdog timed out")
-				GenServer.cast(__MODULE__, {:delete_watchdog_pid, self()})
+
 		end
 	end
 end
