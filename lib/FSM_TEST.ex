@@ -8,7 +8,7 @@ defmodule FSM_TEST do
 	def init([]) do
                 IO.puts("### Initializing... ###")
                 {:ok, elevatorpid} = Driver.start()
-                Orders.start_link
+                Orders.start_link([])
                 FSM.start_link([elevatorpid])
                 Poller.start_link([elevatorpid])
                 spawn(fn -> FSM.run_FSM end)
