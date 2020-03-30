@@ -12,7 +12,7 @@ defmodule FSM do
   end
 
   def init([elevatorpid]) do #structen er {floor(siste etasje), goal_floor, direction, elevatorpid}
-    {:ok, {nil, nil, :stop, elevatorpid}}
+    {:ok, {:nil, :nil, :stop, elevatorpid}}
   end
 
   def get_state() do
@@ -56,9 +56,16 @@ defmodule FSM do
 
     Driver.set_floor_indicator(elevatorpid, floor);
 
+    if Orders.check_orders(floor, old_direction) do
+      Logger.info("Floor med samme retning")
+      _pick_up_passengers(elevatorpid, floor, old_direction)
+    end
+
     new_state = cond do
       old_goal_floor == floor ->
         _reach_goal_floor(elevatorpid, floor)
+      #Orders.check_orders(floor, old_direction) == true ->
+        #IO.puts("Kom til floor med ordre i samme retning")
       true ->
         {floor, old_goal_floor, old_direction, elevatorpid}
       end
@@ -78,22 +85,24 @@ defmodule FSM do
   end
 
   def handle_cast(:run_FSM, state) do
-    {current_floor, goal_floor, _, elevatorpid} = state
+    {current_floor, goal_floor, dir, elevatorpid} = state
     new_state = cond do
+      current_floor == :nil -> #Uninitialized
+        Logger.info("Uninit")
+        {:nil, 0, _handle_new_order(0, 3), elevatorpid}
       goal_floor == :nil -> #State is idle
-        #new_order = get_order()
-        #new_goal_floor = get_floor_from_order(order)
         if Orders.get_next_order != :nil do
-          {new_goal_floor, _order_type} = Orders.get_next_order()
+          {new_goal_floor, order_type} = Orders.get_next_order()
+          Orders.delete_order({new_goal_floor, order_type})
           {current_floor, new_goal_floor, _handle_new_order(new_goal_floor, current_floor), elevatorpid}
         else
           {current_floor, :nil, :nil, elevatorpid}
         end
       true ->
         :timer.sleep(200)
-        IO.puts("Do nothing")
-        {current_floor, goal_floor, :nil, elevatorpid}
+        {current_floor, goal_floor, dir, elevatorpid}
     end
+
     {:noreply, new_state}
   end
 
@@ -135,6 +144,16 @@ defmodule FSM do
         #Do nothing
       true ->
         Logger.info("bu")
+    end
+  end
+
+  def _pick_up_passengers(elevatorpid, floor, direction) do
+    _open_and_close_door(elevatorpid)
+    Orders.delete_order({floor, :cab})
+    if direction == :up do
+      Orders.delete_order({floor, :hall_up})
+    else
+     Orders.delete_order({floor, :hall_down})
     end
   end
 

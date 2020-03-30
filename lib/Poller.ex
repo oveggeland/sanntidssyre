@@ -23,7 +23,7 @@ defmodule Poller do
 	end
 
 	def floor_poller(heisPID) do
-		:timer.sleep(500)
+		:timer.sleep(200)
 		floor_sensor = Driver.get_floor_sensor_state(heisPID)
 		if floor_sensor != :between_floors do
                         #IO.puts("Floor: #{floor_sensor}")

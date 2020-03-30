@@ -1,13 +1,13 @@
 defmodule Orders do
 	use GenServer
 	require Logger
-	
+
 	def start_link() do
 		GenServer.start_link(__MODULE__, [], name: __MODULE__)
 	end
 
 	def init([]) do
-		{:ok,[]} 
+		{:ok,[]}
 	end
 
 
@@ -48,7 +48,7 @@ defmodule Orders do
 	def handle_call({:check_orders, floor, direction}, _from, orders) do
 		dir_map = %{:up => :hall_up, :down => :hall_down}
 		disjoint_test = [{floor, :cab}, {floor, dir_map[direction]}] |> List.myers_difference(orders)
-		IO.inspect(disjoint_test)
+                #IO.inspect(disjoint_test)
 		{:reply, disjoint_test[:eq] != nil, orders}
 	end
 
