@@ -1,7 +1,6 @@
 defmodule Poller do
 	use Task
 	require Orders
-	require FSM
 
 	def start_link([heisPID]) do
 		buttons = get_all_buttons()

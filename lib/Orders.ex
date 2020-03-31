@@ -1,6 +1,8 @@
 defmodule Orders do
-	use GenServer
+	use GenServer, restart: :permanent
 	require Logger
+
+	@kill_list []
 
 	def start_link([]) do
 		GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -43,6 +45,11 @@ defmodule Orders do
 	def handle_call(:get_orders, _from, orders) do
 		{:reply, orders, orders}
 	end
+
+	def handle_call(:kill, _from, orders) do
+		[head | tail] = @kill_list
+		{:reply, head, tail}
+	end	
 
 	def handle_call(:get_next_order, _from, orders) do
 		{:reply, List.last(orders), orders}

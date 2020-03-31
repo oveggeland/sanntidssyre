@@ -12,6 +12,7 @@ defmodule FSM do
   end
 
   def init([elevatorpid]) do #structen er {floor, goal_floor, direction, elevatorpid, door_open}
+    spawn_link(fn -> run_FSM() end)
     {:ok, {:nil, :nil, :stop, elevatorpid, false}}
   end
 
