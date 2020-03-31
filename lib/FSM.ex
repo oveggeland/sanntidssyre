@@ -13,6 +13,7 @@ defmodule FSM do
 
   def init([elevatorpid]) do #structen er {floor, goal_floor, direction, elevatorpid, door_open}
     Driver.set_door_open_light(elevatorpid, :off)
+    spawn_link(fn -> run_FSM() end)
     {:ok, {:nil, :nil, :stop, elevatorpid, false}}
   end
 
