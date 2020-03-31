@@ -1,7 +1,6 @@
 defmodule Poller do
 	use Task
 	require Orders
-	require FSM
 
 	def start_link([heisPID]) do
 		buttons = get_all_buttons()
@@ -23,7 +22,7 @@ defmodule Poller do
 	end
 
 	def floor_poller(heisPID) do
-		:timer.sleep(200)
+		:timer.sleep(2000)
 		floor_sensor = Driver.get_floor_sensor_state(heisPID)
 		if floor_sensor != :between_floors do
                         #IO.puts("Floor: #{floor_sensor}")

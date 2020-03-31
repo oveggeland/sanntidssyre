@@ -6,14 +6,6 @@ defmodule Cluster do
 
 
 	def start_link([name]) do
-
-		### Spawning all modules ###
-		Distributor.start_link([])
-		FSM_TEST.start_link([])
-		Orders.start_link([])
-		Watchdog.start_link([])
-
-
 		get_my_node_name(name) |> Node.start()
 		Node.set_cookie(:safari)
 		Task.start_link(fn -> connect_to_cluster(name) end)

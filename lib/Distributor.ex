@@ -1,5 +1,5 @@
 defmodule Distributor do
-	use GenServer
+	use GenServer, restart: :permanent
 
 	def start_link([]) do
 		GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -13,7 +13,6 @@ defmodule Distributor do
 	## API ##
 
 	def new_order(order) do
-		IO.puts("Distributing")
 		#Finding optimal elevator to handle order
 		{all_bids, _} = GenServer.multi_call(__MODULE__, {:get_bids, order})
 		{lowest_bidder, _} = List.keysort(all_bids, 1) |> List.first()
@@ -52,6 +51,6 @@ defmodule Distributor do
 	def handle_call({:get_bids, _order}, _from,  nil) do
 		### TODO ###
 		#Implement the cost-function routine
-		{:reply, FSM_TEST.get_state(), nil}
+		{:reply, :rand.uniform(10), nil}
 	end
 end

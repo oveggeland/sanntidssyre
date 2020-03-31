@@ -1,5 +1,5 @@
 defmodule Watchdog do
-	use GenServer
+	use GenServer, restart: :permanent
 	require Logger
 	
 	#Constants
