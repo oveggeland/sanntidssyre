@@ -8,6 +8,7 @@ defmodule Lights do
 	end
 
 	def init([elevPID]) do
+                clear_all_order_lights()
 		{:ok, elevPID}
 	end
 
@@ -20,7 +21,7 @@ defmodule Lights do
 		GenServer.cast(__MODULE__, {:set_door_open_light, state})
 	end
 
-        def clear_all_order_lights() do
+        defp clear_all_order_lights() do
                 GenServer.cast(__MODULE__, :clear_lights)
         end
 
