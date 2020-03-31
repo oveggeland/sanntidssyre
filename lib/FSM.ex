@@ -12,7 +12,6 @@ defmodule FSM do
   end
 
   def init([elevatorpid]) do #structen er {floor, goal_floor, direction, elevatorpid, door_open}
-    Driver.set_door_open_light(elevatorpid, :off)
     {:ok, {:nil, :nil, :stop, elevatorpid, false}}
   end
 
@@ -40,8 +39,8 @@ defmodule FSM do
   def run_FSM() do
     GenServer.cast(__MODULE__, :run_FSM)
     Process.sleep(100)
-    {floor,goal,dir,_,_} = get_state()
-    Logger.info("#{floor}, #{goal}, #{dir}")
+    {floor,goal,dir,_,door} = get_state()
+    Logger.info("#{floor}, #{goal}, #{dir}, #{door}")
     run_FSM()
   end
 
@@ -55,18 +54,22 @@ defmodule FSM do
   def handle_cast({:update, floor}, state) do
     {_, old_goal_floor, old_direction, elevatorpid, door_open} = state
 
-    Driver.set_floor_indicator(elevatorpid, floor);
+    #Driver.set_floor_indicator(elevatorpid, floor);
+    Lights.update_floor_indicator(floor)
 
-    if Orders.check_orders(floor, old_direction) do
-      Logger.info("Floor med samme retning")
-      _pick_up_passengers(floor, old_direction)
-    end
+    #if Orders.check_orders(floor, old_direction) do
+    #  Logger.info("Floor med samme retning")
+    #  _pick_up_passengers(floor, old_direction)
+    #end
 
     new_state = cond do
 
       old_goal_floor == floor ->
         _reach_goal_floor(elevatorpid, floor, door_open, old_direction)
 
+      Orders.check_orders(floor, old_direction) == true ->
+        _pick_up_passengers(floor, old_direction)
+        {floor, old_goal_floor, :stop, elevatorpid, door_open}
       true ->
         {floor, old_goal_floor, old_direction, elevatorpid, door_open}
       end
@@ -89,7 +92,6 @@ defmodule FSM do
     {current_floor, goal_floor, dir, elevatorpid, door_open} = state
     new_state = cond do
       door_open == true -> #door open do nothing
-        IO.puts("Door open")
         {current_floor, goal_floor, dir, elevatorpid, door_open}
       current_floor == :nil -> #Uninitialized
         Logger.info("Uninit")
@@ -114,13 +116,15 @@ defmodule FSM do
 
   def handle_cast(:open_door, state) do
     {floor,goal_floor, direction, elevatorpid, _} = state
-    Driver.set_door_open_light(elevatorpid, :on)
+    #Driver.set_door_open_light(elevatorpid, :on)
+    Lights.update_door_open(:on)
     {:noreply, {floor, goal_floor, direction, elevatorpid, true}}
   end
 
   def handle_cast(:close_door, state) do
     {floor,goal_floor, direction, elevatorpid, _} = state
-    Driver.set_door_open_light(elevatorpid, :off)
+    #Driver.set_door_open_light(elevatorpid, :off)
+    Lights.update_door_open(:off)
     {:noreply, {floor, goal_floor, direction, elevatorpid, false}}
   end
 
@@ -165,6 +169,7 @@ defmodule FSM do
 
   def _pick_up_passengers(floor, direction) do
     _open_and_close_door()
+    drive_elevator(:stop)
     Distributor.order_complete({floor, :cab})
     cond do
       direction == :up ->
