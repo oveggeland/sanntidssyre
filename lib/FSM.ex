@@ -12,6 +12,7 @@ defmodule FSM do
   end
 
   def init([elevatorpid]) do #structen er {floor, goal_floor, direction, elevatorpid, door_open}
+    Driver.set_door_open_light(elevatorpid, :off)
     {:ok, {:nil, :nil, :stop, elevatorpid, false}}
   end
 
@@ -38,7 +39,7 @@ defmodule FSM do
 
   def run_FSM() do
     GenServer.cast(__MODULE__, :run_FSM)
-    Process.sleep(1000)
+    Process.sleep(100)
     {floor,goal,dir,_,_} = get_state()
     Logger.info("#{floor}, #{goal}, #{dir}")
     run_FSM()
@@ -64,7 +65,7 @@ defmodule FSM do
     new_state = cond do
 
       old_goal_floor == floor ->
-        _reach_goal_floor(elevatorpid, floor, door_open)
+        _reach_goal_floor(elevatorpid, floor, door_open, old_direction)
 
       true ->
         {floor, old_goal_floor, old_direction, elevatorpid, door_open}
@@ -89,15 +90,17 @@ defmodule FSM do
     new_state = cond do
       door_open == true -> #door open do nothing
         IO.puts("Door open")
-        :timer.sleep(1000)
         {current_floor, goal_floor, dir, elevatorpid, door_open}
       current_floor == :nil -> #Uninitialized
         Logger.info("Uninit")
-        {:nil, 0, _handle_new_order(0, 3), elevatorpid, door_open}
+        Distributor.new_order({0, :cab})
+        {3, 0, :down, elevatorpid, door_open}
+      goal_floor != :nil ->
+        {current_floor, goal_floor,_handle_new_order(goal_floor, current_floor), elevatorpid, door_open}
       goal_floor == :nil -> #State is idle
         if Orders.get_next_order != :nil do
-          {new_goal_floor, order_type} = Orders.get_next_order()
-          Orders.delete_order({new_goal_floor, order_type})
+          {new_goal_floor, _order_type} = Orders.get_next_order()
+          #Orders.delete_order({new_goal_floor, order_type})
           {current_floor, new_goal_floor, _handle_new_order(new_goal_floor, current_floor), elevatorpid, door_open}
         else
           {current_floor, :nil, :nil, elevatorpid, door_open}
@@ -127,11 +130,20 @@ defmodule FSM do
     spawn(fn -> :timer.sleep(door_open_time()); GenServer.cast(__MODULE__, :close_door) end)
   end
 
-  def _reach_goal_floor(elevatorpid, floor, door_open) do
+  def _reach_goal_floor(elevatorpid, floor, door_open, direction) do
     Logger.info("At goal floor")
     drive_elevator(:stop)
     _open_and_close_door()
-    #_clear_watchdog(order)
+    Distributor.order_complete({floor, :cab})
+    cond do
+      direction == :stop ->
+        Distributor.order_complete({floor, :hall_up})
+        Distributor.order_complete({floor, :hall_down})
+      direction == :up ->
+        Distributor.order_complete({floor, :hall_up})
+      true ->
+        Distributor.order_complete({floor, :hall_down})
+    end
     {floor, :nil, :stop, elevatorpid, door_open}
   end
 
@@ -153,11 +165,12 @@ defmodule FSM do
 
   def _pick_up_passengers(floor, direction) do
     _open_and_close_door()
-    Orders.delete_order({floor, :cab})
-    if direction == :up do
-      Orders.delete_order({floor, :hall_up})
-    else
-     Orders.delete_order({floor, :hall_down})
+    Distributor.order_complete({floor, :cab})
+    cond do
+      direction == :up ->
+        Distributor.order_complete({floor, :hall_up})
+      true ->
+        Distributor.order_complete({floor, :hall_down})
     end
   end
 
