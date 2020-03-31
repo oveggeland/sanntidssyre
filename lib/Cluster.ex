@@ -1,6 +1,6 @@
 defmodule Cluster do
 	use Task
-	
+
 	@broadcast_port 4444
 	@broadcast_ip {255,255,255,255}
 
@@ -20,7 +20,7 @@ defmodule Cluster do
 
 	def node_broadcast(socket, name) do
 		:gen_udp.send(socket, @broadcast_ip, @broadcast_port, name)
-	
+
 		:timer.sleep(5000)
 		node_broadcast(socket, name)
 	end
@@ -31,13 +31,13 @@ defmodule Cluster do
 		name = data |> to_string()
 		node_name = name<>"@"<>(:inet.ntoa(ip) |> to_string())
 		node_name |> String.to_atom() |> Node.ping()
-	
+
 		node_listener(socket)
-	end	
+	end
 
 	defp get_my_node_name(name) do
 		{:ok, ip_tuple} = :inet.getif()
-		ip = ip_tuple |> Enum.at(2) |> Tuple.to_list() |> Enum.at(0) |> :inet.ntoa() |> to_string()
+		ip = ip_tuple |> Enum.at(0) |> Tuple.to_list() |> Enum.at(0) |> :inet.ntoa() |> to_string()
 		name <> "@" <> ip |> String.to_atom()
 	end
 

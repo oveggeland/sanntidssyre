@@ -96,7 +96,6 @@ defmodule FSM do
         {current_floor, goal_floor, dir, elevatorpid, door_open}
       current_floor == :nil -> #Uninitialized
         Logger.info("Uninit")
-        Distributor.new_order({0, :cab})
         {3, 0, :down, elevatorpid, door_open}
       goal_floor != :nil ->
         {current_floor, goal_floor,_handle_new_order(goal_floor, current_floor), elevatorpid, door_open}
