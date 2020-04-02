@@ -29,8 +29,8 @@ defmodule ButtonPoller do
 		
 		button_push = Driver.get_order_button_state(elevPID, floor, type)
 		if button_push == 1 do
-			IO.puts(3)
-			#Distributor.new_order({floor, type})
+			Distributor.new_order({floor, type})
+			:timer.sleep(250)
 		end
 	
 		button_poller(elevPID, {floor, type})
@@ -48,8 +48,7 @@ defmodule FloorPoller do
 
 		floor_sensor = Driver.get_floor_sensor_state(elevPID)
 		if floor_sensor != :between_floors do
-			IO.puts(2)
-                      	#FSM.update_floor(floor_sensor)
+                      	FSM.update_floor(floor_sensor)
 		end
 
 		floor_poller(elevPID)
