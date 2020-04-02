@@ -41,7 +41,7 @@ defmodule FSM do
     GenServer.cast(__MODULE__, :run_FSM)
     Process.sleep(100)
     {floor,goal,dir,_,door} = get_state()
-    Logger.info("#{floor}, #{goal}, #{dir}, #{door}")
+    #Logger.info("#{floor}, #{goal}, #{dir}, #{door}")
     run_FSM()
   end
 
@@ -138,15 +138,15 @@ defmodule FSM do
     Logger.info("At goal floor")
     drive_elevator(:stop)
     _open_and_close_door()
-    Distributor.order_complete({floor, :cab})
+    Distributor.order_complete({floor, :cab}, Node.self())
     cond do
       direction == :stop ->
-        Distributor.order_complete({floor, :hall_up})
-        Distributor.order_complete({floor, :hall_down})
+        Distributor.order_complete({floor, :hall_up}, Node.self())
+        Distributor.order_complete({floor, :hall_down}, Node.self())
       direction == :up ->
-        Distributor.order_complete({floor, :hall_up})
+        Distributor.order_complete({floor, :hall_up}, Node.self())
       true ->
-        Distributor.order_complete({floor, :hall_down})
+        Distributor.order_complete({floor, :hall_down}, Node.self())
     end
     {floor, :nil, :stop, elevatorpid, door_open}
   end
@@ -170,12 +170,12 @@ defmodule FSM do
   def _pick_up_passengers(floor, direction) do
     _open_and_close_door()
     drive_elevator(:stop)
-    Distributor.order_complete({floor, :cab})
+    Distributor.order_complete({floor, :cab}, Node.self())
     cond do
       direction == :up ->
-        Distributor.order_complete({floor, :hall_up})
+        Distributor.order_complete({floor, :hall_up}, Node.self())
       true ->
-        Distributor.order_complete({floor, :hall_down})
+        Distributor.order_complete({floor, :hall_down}, Node.self())
     end
   end
 

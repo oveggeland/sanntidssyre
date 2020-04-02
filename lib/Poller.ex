@@ -29,7 +29,7 @@ defmodule ButtonPoller do
 		
 		button_push = Driver.get_order_button_state(elevPID, floor, type)
 		if button_push == 1 do
-			Distributor.new_order({floor, type})
+			Distributor.new_order({floor, type}, Node.self())
 			:timer.sleep(250)
 		end
 	

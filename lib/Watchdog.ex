@@ -15,30 +15,18 @@ defmodule Watchdog do
 	end
 
 
-
-	### User Interface ###
-
-	def spawn_watchdog(order) do
-		GenServer.cast(__MODULE__, {:spawn_watchdog, order})		
-	end
-
-	def order_complete(order) do
-		GenServer.cast(__MODULE__, {:kill_watchdog, order})
-	end
-
-
 	### Call handlers ###
 
-	def handle_call({:spawn_watchdog, order}, _from, watchdog_pids) do
-		pid = spawn(fn -> watchdog(order) end)
+	def handle_call({:spawn_watchdog, order, node}, _from, watchdog_pids) do
+		pid = spawn(fn -> watchdog(order, node) end)
 		watchdog_pids = [pid | watchdog_pids]
 		{:reply, :ok, watchdog_pids}
 	end
 
 	### Cast handlers ###
 
-	def handle_cast({:kill_watchdog, completed_order}, watchdog_pids) do
-		Enum.each(watchdog_pids, fn(pid) -> send(pid, {:kill, completed_order}) end)
+	def handle_cast({:kill_watchdog, completed_order, node}, watchdog_pids) do
+		Enum.each(watchdog_pids, fn(pid) -> send(pid, {:kill, completed_order, node}) end)
 		{:noreply, watchdog_pids}
 	end
 
@@ -50,17 +38,17 @@ defmodule Watchdog do
 
 	### THE watchdog ###	
 
-	defp watchdog(watch_order) do
+	defp watchdog(watch_order, node) do
 		#Avoiding race_conditions by adding a random offset to time_out_val	
 		time_out_val = @time_out + :rand.uniform(100)
 		receive do
-			{:kill, ^watch_order} ->
+			{:kill, ^watch_order, ^node} ->
 				GenServer.cast(__MODULE__, {:delete_watchdog_pid, self()})
 
 		after
 			time_out_val ->
-				GenServer.abcast(Watchdog, {:kill_watchdog, watch_order})
-				Distributor.new_order(watch_order)
+				GenServer.abcast(Watchdog, {:kill_watchdog, watch_order, node})
+				Distributor.new_order(watch_order, node)
 				Logger.info("Watchdog timed out")
 
 		end

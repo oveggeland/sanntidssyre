@@ -37,7 +37,7 @@ defmodule Cluster do
 
 	defp get_my_node_name(name) do
 		{:ok, ip_tuple} = :inet.getif()
-		ip = ip_tuple |> Enum.at(0) |> Tuple.to_list() |> Enum.at(0) |> :inet.ntoa() |> to_string()
+		ip = ip_tuple |> Enum.at(2) |> Tuple.to_list() |> Enum.at(0) |> :inet.ntoa() |> to_string()
 		name <> "@" <> ip |> String.to_atom()
 	end
 
