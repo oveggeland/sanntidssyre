@@ -1,38 +1,57 @@
-defmodule Poller do
-	use Task
-	require Orders
+defmodule PollerSupervisor do
+	use Supervisor
 
-	def start_link([heisPID]) do
-		buttons = get_all_buttons()
-		Enum.each(buttons, fn(button)->
-			Task.start_link(fn -> button_poller(heisPID, button) end)
-						end)
-		Task.start_link(fn -> floor_poller(heisPID) end)
+	def start_link([elevPID]) do
+		Supervisor.start_link(__MODULE__, [elevPID], name: __MODULE__)
 	end
 
+	def init([elevPID]) do
+		children = get_all_buttons() |> Enum.map_every(1,fn(btn)->%{id: btn, start: {ButtonPoller, :start_link, [elevPID, btn]}} end)
+		children = [{FloorPoller, [elevPID]} | children]
 
-	def button_poller(heisPID, {floor, type}) do
-		:timer.sleep(50)
-		button_push = Driver.get_order_button_state(heisPID, floor, type)
-		if button_push == 1 do
-			Distributor.new_order({floor, type})
-			#### Add whatever happens when button is pushed ####
-		end
-		button_poller(heisPID, {floor, type})
-	end
-
-	def floor_poller(heisPID) do
-		:timer.sleep(200)
-		floor_sensor = Driver.get_floor_sensor_state(heisPID)
-		if floor_sensor != :between_floors do
-                        #IO.puts("Floor: #{floor_sensor}")
-                        FSM.update_floor(floor_sensor)
-			#### Add whatever happens when floor sensor goes off! ####
-		end
-		floor_poller(heisPID)
+		Supervisor.init(children, strategy: :one_for_one)
 	end
 
 	defp get_all_buttons() do
 	 	for floors <- 0..3, type <- [:cab, :hall_up, :hall_down] do {floors, type} end |> List.delete({0, :hall_down}) |> List.delete({3, :hall_up})
+	end
+end
+
+
+defmodule ButtonPoller do
+	use Task, restart: :permanent
+	def start_link(elevPID, btn) do
+		Task.start_link(__MODULE__, :button_poller, [elevPID, btn])
+	end
+
+	def button_poller(elevPID, {floor, type}) do
+		:timer.sleep(50)
+		
+		button_push = Driver.get_order_button_state(elevPID, floor, type)
+		if button_push == 1 do
+			IO.puts(3)
+			#Distributor.new_order({floor, type})
+		end
+	
+		button_poller(elevPID, {floor, type})
+	end
+end
+
+defmodule FloorPoller do 
+	use Task, restart: :permanent
+	def start_link([elevPID]) do
+		Task.start_link(__MODULE__, :floor_poller, [elevPID])
+	end
+
+	def floor_poller(elevPID) do
+		:timer.sleep(200)
+
+		floor_sensor = Driver.get_floor_sensor_state(elevPID)
+		if floor_sensor != :between_floors do
+			IO.puts(2)
+                      	#FSM.update_floor(floor_sensor)
+		end
+
+		floor_poller(elevPID)
 	end
 end

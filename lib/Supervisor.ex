@@ -8,17 +8,14 @@ defmodule HEIS.Supervisor do
 	def init([node_name]) do
 		{:ok, elevPID} = Driver.start()
 		children = [
-			%{	id: Poller,
-				start: {Poller, :start_link, [[elevPID]]},
-				restart: :permanent
-			},
+			{PollerSupervisor, [elevPID]},
 			{Lights, [elevPID]},
 			{FSM, [elevPID]},
 			{Cluster, [node_name]},
 			Orders,
 			Watchdog,
 			Distributor	
-			]
+		]
 		Supervisor.init(children, strategy: :one_for_one)
 	end
 
