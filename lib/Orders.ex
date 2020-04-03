@@ -2,7 +2,6 @@ defmodule Orders do
 	use GenServer, restart: :permanent
 	require Logger
 
-	@kill_list []
 
 	def start_link([]) do
 		GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -26,15 +25,6 @@ defmodule Orders do
 
 
 	### Test functions ###
-
-	def add_order(new_order) do
-		GenServer.call(__MODULE__, {:add_order, new_order})
-	end
-
-	def delete_order(order) do
-		GenServer.cast(__MODULE__, {:delete_order, order})
-	end
-
 	def get_orders() do
 		GenServer.call(__MODULE__, :get_orders)
 	end
@@ -45,11 +35,6 @@ defmodule Orders do
 	def handle_call(:get_orders, _from, orders) do
 		{:reply, orders, orders}
 	end
-
-	def handle_call(:kill, _from, orders) do
-		[head | tail] = @kill_list
-		{:reply, head, tail}
-	end	
 
 	def handle_call(:get_next_order, _from, orders) do
 		{:reply, List.last(orders), orders}
@@ -62,6 +47,8 @@ defmodule Orders do
 	end
 
 	def handle_call({:add_order, new_order}, _from, orders) do
+		{floor, type} = new_order
+		Logger.info("Adding order: {#{floor}, #{type}} to list")
 		orders = [new_order | orders]
 		{:reply, :order_added, orders}
 	end

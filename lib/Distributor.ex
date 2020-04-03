@@ -1,5 +1,6 @@
 defmodule Distributor do
 	use GenServer, restart: :permanent
+	require Logger
 
 	def start_link([]) do
 		GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -13,6 +14,8 @@ defmodule Distributor do
 	## API ##
 
 	def new_order(order, node) do
+		{floor, type} = order
+		Logger.info("New order: {#{floor}, #{type}}")
 		case order do
 			{_, :cab} ->
 				new_cab_order(order, node)
@@ -31,6 +34,7 @@ defmodule Distributor do
 	def new_hall_order(order) do
 		#Finding optimal elevator to handle order
 		{all_bids, _} = GenServer.multi_call(__MODULE__, {:get_bids, order})
+		Logger.info(all_bids)
 		{lowest_bidder, _} = List.keysort(all_bids, 1) |> List.first()
 		
 		#Tell the relevant elevator to take order, answer :order_added if true
@@ -45,8 +49,9 @@ defmodule Distributor do
 	end	
 
 	def order_complete(order, node) do
-		### Casting order to kill watchdogs for all nodes
-		IO.puts("Order Complete")
+		{floor, type} = order
+		Logger.info("Order complete: {#{floor}, #{type}}. Node: #{node}")
+
 		GenServer.abcast(Watchdog, {:kill_watchdog, order, node})
 		
 		### Casting to node that Orders should delete order
@@ -63,9 +68,43 @@ defmodule Distributor do
 
 	## Call handlers
 
-	def handle_call({:get_bids, _order}, _from,  nil) do
-		### TODO ###
-		#Implement the cost-function routine
-		{:reply, :rand.uniform(10), nil}
+	def handle_call({:get_bids, order}, _from,  nil) do
+		{:reply, calculate_cost(order), nil}
 	end
+
+        defp calculate_cost(order) do
+                {order_floor, _} = order
+
+                truth_map = %{true => 1, false => 0}
+
+                #Retrieving state#
+                orders = Orders.get_orders()
+
+                already_taken = Enum.member?(orders, order)
+                digit1 = truth_map[!already_taken]
+
+                order_on_the_way =order_on_the_way?(order, FSM.get_state())
+                digit2 = truth_map[!order_on_the_way]
+
+                elevator_busy = List.first(orders) != nil
+                digit3 = truth_map[elevator_busy]
+
+                {state_floor, _, _, _, _} = FSM.get_state()
+                distance_to_order = abs(order_floor - state_floor)
+                digit4 = distance_to_order
+
+                bid = Integer.undigits([digit1, digit2, digit3, digit4])
+                Logger.info("My bid is #{bid}")
+		bid
+        end
+
+        defp order_on_the_way?({order_floor, order_type},{state_floor, goal_floor, direction, _, _}) do
+                if goal_floor != nil do
+                        dir_map = %{:hall_up => :up, :hall_down => :down}
+                        ((order_floor - state_floor)*(order_floor - goal_floor) < 0) && dir_map[order_type] == direction
+                else
+                        false
+                end
+        end
 end
+

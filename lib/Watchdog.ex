@@ -41,6 +41,10 @@ defmodule Watchdog do
 	defp watchdog(watch_order, node) do
 		#Avoiding race_conditions by adding a random offset to time_out_val	
 		time_out_val = @time_out + :rand.uniform(100)
+
+		{floor, type} = watch_order
+		Logger.info("New watchdog, watching {#{floor}, #{type}} for node: #{node}")
+	
 		receive do
 			{:kill, ^watch_order, ^node} ->
 				GenServer.cast(__MODULE__, {:delete_watchdog_pid, self()})
@@ -49,7 +53,7 @@ defmodule Watchdog do
 			time_out_val ->
 				GenServer.abcast(Watchdog, {:kill_watchdog, watch_order, node})
 				Distributor.new_order(watch_order, node)
-				Logger.info("Watchdog timed out")
+				Logger.info("Watchdog {#{floor}, #{type}} timed out")
 
 		end
 	end

@@ -1,5 +1,6 @@
 defmodule PollerSupervisor do
 	use Supervisor
+	require Logger
 
 	def start_link([elevPID]) do
 		Supervisor.start_link(__MODULE__, [elevPID], name: __MODULE__)
@@ -48,7 +49,8 @@ defmodule FloorPoller do
 
 		floor_sensor = Driver.get_floor_sensor_state(elevPID)
 		if floor_sensor != :between_floors do
-                      	FSM.update_floor(floor_sensor)
+			#Logger.info("At floor #{floor_sensor}")	
+	               	FSM.update_floor(floor_sensor)
 		end
 
 		floor_poller(elevPID)

@@ -34,11 +34,13 @@ defmodule Lights do
 
 	### Cast handlers ###
 	def handle_cast({:set_order_light, {floor, button_type}, state}, elevPID) do
+		Logger.info("Setting order light: {#{floor}, #{button_type}} #{state}")
 		Driver.set_order_button_light(elevPID, button_type, floor, state)
 		{:noreply, elevPID}
 	end
 
 	def handle_cast({:set_door_open_light, state}, elevPID) do
+		Logger.info("Setting door-open light: #{state}")
 		Driver.set_door_open_light(elevPID, state)
 		{:noreply, elevPID}
 	end
