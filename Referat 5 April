@@ -1,0 +1,13 @@
+Bugs:
+- Slette begge cab + hall down hvis man bestiller cab til samme etasje. (Thomas)
+- Endre poller slik at antall etasjer er genaralisert (Oskar)
+
+Tanker:
+- Malfunction state på FSM hvis heisen ikke kjører for å gjøre at den ikke bidder hvis den ikke kjører. (Thomas)
+- Process registrer heispid for å slippe pid i staten. (Thomas)
+- Legge til en watchdog som starter når man setter motor direction, oppdateres når man passerer etasje, drepes når man setter retning til stop. (Thomas)
+- Legge til assertion når man prøver å kjøre om at døren ikke er åpen. (Thomas)
+- Gi bekjed til alle Orders modulene at en ordre er gjennomført (for når nettverk merges) (Oskar)
+
+Gjennongang av kravspekk:
+- Sjekk at en heis tar imot bestilling, kortslutt denne heisen (både programmet og stoppe den "fysisk") og sjekk om en annen tar over. 
