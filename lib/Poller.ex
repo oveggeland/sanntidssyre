@@ -2,6 +2,8 @@ defmodule PollerSupervisor do
 	use Supervisor
 	require Logger
 
+	@n_floors 4
+
 	def start_link([elevPID]) do
 		Supervisor.start_link(__MODULE__, [elevPID], name: __MODULE__)
 	end
@@ -14,7 +16,7 @@ defmodule PollerSupervisor do
 	end
 
 	defp get_all_buttons() do
-	 	for floors <- 0..3, type <- [:cab, :hall_up, :hall_down] do {floors, type} end |> List.delete({0, :hall_down}) |> List.delete({3, :hall_up})
+	 	for floors <- 0..(@n_floors-1), type <- [:cab, :hall_up, :hall_down] do {floors, type} end |> List.delete({0, :hall_down}) |> List.delete({@n_floors, :hall_up})
 	end
 end
 

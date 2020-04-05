@@ -16,34 +16,36 @@ defmodule Distributor do
 	def new_order(order, node) do
 		{floor, type} = order
 		Logger.info("New order: {#{floor}, #{type}}")
-		case order do
-			{_, :cab} ->
-				new_cab_order(order, node)
-			_ -> 
-				new_hall_order(order)
+		if type == :cab do
+			new_cab_order(order, node)
+		else 
+			new_hall_order(order)
 		end
 	end
 
 	def new_cab_order(order, node) do
-		##What the hell should I do if new Cab Order?? ###
-		GenServer.call(Orders, {:add_order, order})
-		GenServer.multi_call(Watchdog, {:spawn_watchdog, order, node})
-		GenServer.cast(Lights, {:set_order_light, order, :on})
+		GenServer.cast({Orders, node}, {:add_order, order})
+		{reply, _} = GenServer.multi_call(Watchdog, {:spawn_order_watchdog, order, node})
+		if reply != [] do
+			GenServer.cast({Lights, node}, {:set_order_light, order, :on})
+		end
 	end
 
 	def new_hall_order(order) do
+	
 		#Finding optimal elevator to handle order
 		{all_bids, _} = GenServer.multi_call(__MODULE__, {:get_bids, order})
 		Logger.info(all_bids)
 		{lowest_bidder, _} = List.keysort(all_bids, 1) |> List.first()
-		
-		#Tell the relevant elevator to take order, answer :order_added if true
-		_answer = GenServer.call({Orders, lowest_bidder}, {:add_order, order})
+	
+		#Tell optimal elevator to add order	
+		GenServer.cast({Orders, lowest_bidder}, {:add_order, order})
 
-		#Tell all watchdogs to watch order, returns list of replies
-		{replies, _} = GenServer.multi_call(Watchdog, {:spawn_watchdog, order, lowest_bidder})
+		#Tell all nodes to watch order, returns list of replicants
+		{reply, _} = GenServer.multi_call(Watchdog, {:spawn_order_watchdog, order, lowest_bidder})
 		
-		if Enum.at(replies, 0) != nil do
+		#If a watchdog is spawned, set hall_light
+		if reply != [] do
 			GenServer.abcast(Lights, {:set_order_light, order, :on})
 		end	
 	end	
@@ -52,16 +54,13 @@ defmodule Distributor do
 		{floor, type} = order
 		Logger.info("Order complete: {#{floor}, #{type}}. Node: #{node}")
 
-		GenServer.abcast(Watchdog, {:kill_watchdog, order, node})
-		
-		### Casting to node that Orders should delete order
-		GenServer.cast({Orders, node}, {:delete_order, order})
-		
-		case order do
-			{_, :cab} ->
-				GenServer.cast(Lights, {:set_order_light, order, :off})
-			_->
-				GenServer.abcast(Lights, {:set_order_light, order, :off})
+		GenServer.abcast(Watchdog, {:kill_order_watchdog, order, node})
+		if type == :cab do
+			GenServer.cast(Orders, {:delete_order, order})
+			GenServer.cast(Lights, {:set_order_light, order, :off})
+		else
+			GenServer.abcast(Orders, {:delete_order, order})
+			GenServer.abcast(Lights, {:set_order_light, order, :off})
 		end
 	end		
 

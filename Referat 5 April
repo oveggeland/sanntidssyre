@@ -1,13 +1,22 @@
 Bugs:
 - Slette begge cab + hall down hvis man bestiller cab til samme etasje. (Thomas)
-- Endre poller slik at antall etasjer er genaralisert (Oskar)
+- Endre poller slik at antall etasjer er genaralisert (Oskar) - DONE
 
 Tanker:
 - Malfunction state på FSM hvis heisen ikke kjører for å gjøre at den ikke bidder hvis den ikke kjører. (Thomas)
 - Process registrer heispid for å slippe pid i staten. (Thomas)
 - Legge til en watchdog som starter når man setter motor direction, oppdateres når man passerer etasje, drepes når man setter retning til stop. (Thomas)
 - Legge til assertion når man prøver å kjøre om at døren ikke er åpen. (Thomas)
-- Gi bekjed til alle Orders modulene at en ordre er gjennomført (for når nettverk merges) (Oskar)
+- Gi bekjed til alle Orders modulene at en ordre er gjennomført (for når nettverk merges) (Oskar) - DONE
 
 Gjennongang av kravspekk:
 - Sjekk at en heis tar imot bestilling, kortslutt denne heisen (både programmet og stoppe den "fysisk") og sjekk om en annen tar over. 
+
+
+
+
+Kjære Thomas, nå er det lagt inn en watchdog med navn motor_watchdog. Tiden er definert øverst i Wathdog.ex som @motor_time_out og kan endres veldig lett. 
+
+Du spawner en watchdog ved å kalle GenServer.cast(Watchdog, :spawn_motor_watchdog), og dreper den ved å kalle GenServer.cast(Watchdog, :kill_motor_watchdog)
+
+Det er to scenarioer, enten får den beskjed om at alt er good eller så timer den ut. Hva som bør skje ved hvert tilfelle kan du legge inn i receive do kommandoen inne i defp motor_watchdog. Regner med det er naturlig å kalle på en update eller lignende i FSM modulen. :) 

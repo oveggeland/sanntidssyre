@@ -23,11 +23,11 @@ defmodule Orders do
 	end
 
 
-
-	### Test functions ###
+	### Function used by cost-function in Distributor ###
 	def get_orders() do
 		GenServer.call(__MODULE__, :get_orders)
 	end
+
 
 
 	### Call handlers ###
@@ -46,15 +46,15 @@ defmodule Orders do
 		{:reply, disjoint_test[:eq] != nil, orders}
 	end
 
-	def handle_call({:add_order, new_order}, _from, orders) do
-		{floor, type} = new_order
-		Logger.info("Adding order: {#{floor}, #{type}} to list")
-		orders = [new_order | orders]
-		{:reply, :order_added, orders}
-	end
-
 
 	### Cast handlers ###
+
+	def handle_cast({:add_order, order}, orders) do
+		{floor, type} = order
+		Logger.info("Adding order: {#{floor}, #{type}} to list")
+		orders = [order | orders]
+		{:noreply, orders}
+	end
 
 	def handle_cast({:delete_order, order}, orders) do
 		IO.inspect(order)
