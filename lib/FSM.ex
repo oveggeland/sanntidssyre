@@ -75,14 +75,16 @@ defmodule FSM do
 
   def handle_cast({:drive_elevator, direction}, state) do
     {floor, goal_floor, door_open} = state
-    Driver.set_motor_direction(:elevpid, direction)
-    cond do
-      direction == :up ->
-        GenServer.cast(Watchdog, :spawn_motor_watchdog)
-      direction == :down ->
-        GenServer.cast(Watchdog, :spawn_motor_watchdog)
-      direction == :stop ->
-        GenServer.cast(Watchdog, :kill_motor_watchdog)
+    if door_open == false do
+      Driver.set_motor_direction(:elevpid, direction)
+      cond do
+        direction == :up ->
+          GenServer.cast(Watchdog, :spawn_motor_watchdog)
+        direction == :down ->
+          GenServer.cast(Watchdog, :spawn_motor_watchdog)
+        direction == :stop ->
+          GenServer.cast(Watchdog, :kill_motor_watchdog)
+      end
     end
     {:noreply, {floor, goal_floor, door_open}}
   end
