@@ -18,7 +18,7 @@ defmodule Distributor do
 		Logger.info("New order: {#{floor}, #{type}}")
 		if type == :cab do
 			new_cab_order(order, node)
-		else 
+		else
 			new_hall_order(order)
 		end
 	end
@@ -32,23 +32,23 @@ defmodule Distributor do
 	end
 
 	def new_hall_order(order) do
-	
+
 		#Finding optimal elevator to handle order
 		{all_bids, _} = GenServer.multi_call(__MODULE__, {:get_bids, order})
 		Logger.info(all_bids)
 		{lowest_bidder, _} = List.keysort(all_bids, 1) |> List.first()
-	
-		#Tell optimal elevator to add order	
+
+		#Tell optimal elevator to add order
 		GenServer.cast({Orders, lowest_bidder}, {:add_order, order})
 
 		#Tell all nodes to watch order, returns list of replicants
 		{reply, _} = GenServer.multi_call(Watchdog, {:spawn_order_watchdog, order, lowest_bidder})
-		
+
 		#If a watchdog is spawned, set hall_light
 		if reply != [] do
 			GenServer.abcast(Lights, {:set_order_light, order, :on})
-		end	
-	end	
+		end
+	end
 
 	def order_complete(order, node) do
 		{floor, type} = order
@@ -62,7 +62,7 @@ defmodule Distributor do
 			GenServer.abcast(Orders, {:delete_order, order})
 			GenServer.abcast(Lights, {:set_order_light, order, :off})
 		end
-	end		
+	end
 
 
 	## Call handlers
@@ -88,7 +88,7 @@ defmodule Distributor do
                 elevator_busy = List.first(orders) != nil
                 digit3 = truth_map[elevator_busy]
 
-                {state_floor, _, _, _, _} = FSM.get_state()
+                {state_floor, _, _} = FSM.get_state()
                 distance_to_order = abs(order_floor - state_floor)
                 digit4 = distance_to_order
 
@@ -97,13 +97,26 @@ defmodule Distributor do
 		bid
         end
 
-        defp order_on_the_way?({order_floor, order_type},{state_floor, goal_floor, direction, _, _}) do
+        defp order_on_the_way?({order_floor, order_type},{state_floor, goal_floor, _}) do
                 if goal_floor != nil do
                         dir_map = %{:hall_up => :up, :hall_down => :down}
-                        ((order_floor - state_floor)*(order_floor - goal_floor) < 0) && dir_map[order_type] == direction
+                        ((order_floor - state_floor)*(order_floor - goal_floor) < 0) && dir_map[order_type] == find_direction(state_floor, goal_floor)
                 else
                         false
                 end
         end
+
+        defp find_direction(old_floor, new_floor) do
+                cond do
+                        old_floor == new_floor ->
+                                :stop
+                        old_floor > new_floor ->
+                                :down
+                        old_floor < new_floor ->
+                                :up
+                end
+        end
+
+
 end
 
