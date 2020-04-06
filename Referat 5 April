@@ -1,12 +1,12 @@
 Bugs:
-- Slette begge cab + hall down hvis man bestiller cab til samme etasje. (Thomas)
+- Slette begge cab + hall down hvis man bestiller cab til samme etasje. (Thomas) DONE
 - Endre poller slik at antall etasjer er genaralisert (Oskar) - DONE
 
 Tanker:
-- Malfunction state på FSM hvis heisen ikke kjører for å gjøre at den ikke bidder hvis den ikke kjører. (Thomas)
+- Malfunction state på FSM hvis heisen ikke kjører for å gjøre at den ikke bidder hvis den ikke kjører. (Thomas) DONE
 - Process registrer heispid for å slippe pid i staten. (Thomas) - DONE
-- Legge til en watchdog som starter når man setter motor direction, oppdateres når man passerer etasje, drepes når man setter retning til stop. (Thomas)
-- Legge til assertion når man prøver å kjøre om at døren ikke er åpen. (Thomas)
+- Legge til en watchdog som starter når man setter motor direction, oppdateres når man passerer etasje, drepes når man setter retning til stop. (Thomas) DONE (ish hvertfall)
+- Legge til assertion når man prøver å kjøre om at døren ikke er åpen. (Thomas) DONE
 - Gi bekjed til alle Orders modulene at en ordre er gjennomført (for når nettverk merges) (Oskar) - DONE
 
 Gjennongang av kravspekk:
