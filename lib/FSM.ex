@@ -56,10 +56,10 @@ defmodule FSM do
     new_state = cond do
 
       old_goal_floor == floor ->
-        _reach_goal_floor(:elevpid, floor, door_open, direction)
+        reach_goal_floor(:elevpid, floor, door_open, direction)
 
       Orders.check_orders(floor, direction) == true ->
-        _pick_up_passengers(floor, direction)
+        pick_up_passengers(floor, direction)
         {floor, old_goal_floor, door_open}
       true ->
         {floor, old_goal_floor, door_open}
@@ -96,12 +96,12 @@ defmodule FSM do
         Logger.info("Uninit")
         {3, 0, door_open}
       goal_floor != :nil ->
-        _handle_new_order(goal_floor, current_floor)
+        handle_new_order(goal_floor, current_floor)
         {current_floor, goal_floor, door_open}
       goal_floor == :nil -> #State is idle
         if Orders.get_next_order != :nil do
           {new_goal_floor, _order_type} = Orders.get_next_order()
-          _handle_new_order(new_goal_floor, current_floor)
+          handle_new_order(new_goal_floor, current_floor)
           {current_floor, new_goal_floor, door_open}
         else
           {current_floor, :nil, door_open}
@@ -131,7 +131,7 @@ defmodule FSM do
     spawn(fn -> :timer.sleep(door_open_time()); GenServer.cast(__MODULE__, :close_door) end)
   end
 
-  def _reach_goal_floor(:elevpid, floor, door_open, direction) do
+  defp reach_goal_floor(:elevpid, floor, door_open, direction) do
     Logger.info("At goal floor")
     drive_elevator(:stop)
     _open_and_close_door()
@@ -148,7 +148,7 @@ defmodule FSM do
     {floor, :nil, door_open}
   end
 
-  def _handle_new_order(new_goal_floor, current_floor) do
+  defp handle_new_order(new_goal_floor, current_floor) do
     cond do
       new_goal_floor > current_floor ->
         drive_elevator(:up)
@@ -164,7 +164,7 @@ defmodule FSM do
     end
   end
 
-  def _pick_up_passengers(floor, direction) do
+  defp pick_up_passengers(floor, direction) do
     _open_and_close_door()
     drive_elevator(:stop)
     Distributor.order_complete({floor, :cab}, Node.self())
