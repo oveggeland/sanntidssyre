@@ -26,11 +26,6 @@ defmodule Lights do
                 GenServer.cast(__MODULE__, {:update_floor_indicator, floor})
         end
 
-        def update_door_open(state) do
-                GenServer.cast(__MODULE__, {:update_door_open, state})
-        end
-
-
 
 	### Cast handlers ###
 	def handle_cast({:set_order_light, {floor, button_type}, state}, elevPID) do
@@ -47,14 +42,11 @@ defmodule Lights do
 
 
 	def handle_cast({:update_floor_indicator, floor}, elevPID) do
+                #Logger.info("Setting indicator light at floor: #{floor}")
 		Driver.set_floor_indicator(elevPID, floor)
 		{:noreply, elevPID}
 	end
 
-	def handle_cast({:update_door_open, state}, elevPID) do
-                Driver.set_door_open_light(elevPID, state)
-		{:noreply, elevPID}
-	end
 
 	defp clear_all_order_lights(elevPID) do
                 for floors <- 0..3, type <- [:cab, :hall_up, :hall_down] do Driver.set_order_button_light(elevPID, type, floors, :off) end
