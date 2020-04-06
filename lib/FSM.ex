@@ -55,11 +55,11 @@ defmodule FSM do
     new_state = cond do
 
       goal_floor == floor ->
-        reach_goal_floor(:elevpid, floor, door_open, direction)
+        stop_and_pick_up_passengers(floor)
+        {floor, :nil, true}
 
-      Orders.check_orders(floor, direction) == true && direction != :stop ->
-        drive_elevator(:stop)
-        pick_up_passengers(floor, direction)
+      Orders.check_orders(floor, direction) == true ->
+        stop_and_pick_up_passengers(floor)
         {floor, goal_floor, true}
 
       true ->
@@ -125,24 +125,16 @@ defmodule FSM do
     {:noreply, {floor, goal_floor, false}}
   end
 
-  defp reach_goal_floor(:elevpid, floor, door_open, direction) do
+  defp stop_and_pick_up_passengers(floor) do
+
     drive_elevator(:stop)
 
     open_and_close_door()
 
     Distributor.order_complete({floor, :cab}, Node.self())
+    Distributor.order_complete({floor, :hall_up}, Node.self())
+    Distributor.order_complete({floor, :hall_down}, Node.self())
 
-    cond do
-      direction == :stop ->
-        Distributor.order_complete({floor, :hall_up}, Node.self())
-        Distributor.order_complete({floor, :hall_down}, Node.self())
-      direction == :up ->
-        Distributor.order_complete({floor, :hall_up}, Node.self())
-      true ->
-        Distributor.order_complete({floor, :hall_down}, Node.self())
-    end
-
-    {floor, :nil, door_open}
   end
 
   defp handle_order(goal_floor, current_floor) do
@@ -161,22 +153,6 @@ defmodule FSM do
     end
     {current_floor, goal_floor, false}
   end
-
-  defp pick_up_passengers(floor, direction) do
-    drive_elevator(:stop)
-
-    open_and_close_door()
-
-    Distributor.order_complete({floor, :cab}, Node.self())
-
-    cond do
-      direction == :up ->
-        Distributor.order_complete({floor, :hall_up}, Node.self())
-      true ->
-        Distributor.order_complete({floor, :hall_down}, Node.self())
-    end
-  end
-
 
   defp find_direction(old_floor, new_floor) do
     cond do
