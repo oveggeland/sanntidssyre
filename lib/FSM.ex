@@ -82,7 +82,7 @@ defmodule FSM do
   def handle_cast(:run_FSM, state) do
     {current_floor, goal_floor, door_open, malfunction} = state
     new_state = cond do
-      door_open == true || malfunction -> #door open do nothing
+      door_open == true -> #door open do nothing
         {current_floor, goal_floor, door_open, malfunction}
 
       current_floor == :nil -> #Uninitialized
