@@ -79,6 +79,9 @@ defmodule Distributor do
                 #Retrieving state#
                 orders = Orders.get_orders()
 
+                {_,_,_,malfunction} = FSM.get_state()
+                digit0 = truth_map[malfunction]
+
                 already_taken = Enum.member?(orders, order)
                 digit1 = truth_map[!already_taken]
 
@@ -88,16 +91,16 @@ defmodule Distributor do
                 elevator_busy = List.first(orders) != nil
                 digit3 = truth_map[elevator_busy]
 
-                {state_floor, _, _} = FSM.get_state()
+                {state_floor, _, _, _} = FSM.get_state()
                 distance_to_order = abs(order_floor - state_floor)
                 digit4 = distance_to_order
 
-                bid = Integer.undigits([digit1, digit2, digit3, digit4])
+                bid = Integer.undigits([digit0, digit1, digit2, digit3, digit4])
                 Logger.info("My bid is #{bid}")
 		bid
         end
 
-        defp order_on_the_way?({order_floor, order_type},{state_floor, goal_floor, _}) do
+        defp order_on_the_way?({order_floor, order_type},{state_floor, goal_floor, _, _}) do
                 if goal_floor != nil do
                         dir_map = %{:hall_up => :up, :hall_down => :down}
                         ((order_floor - state_floor)*(order_floor - goal_floor) < 0) && dir_map[order_type] == find_direction(state_floor, goal_floor)

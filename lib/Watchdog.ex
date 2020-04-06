@@ -1,7 +1,7 @@
 defmodule Watchdog do
 	use GenServer, restart: :permanent
 	require Logger
-	
+
 	#Constants
 	@order_time_out 15000
 	@motor_time_out 5000
@@ -29,6 +29,7 @@ defmodule Watchdog do
 	def handle_cast(:spawn_motor_watchdog, watchdog_pids) do
 		pid = spawn_link(fn -> motor_watchdog() end)
 		watchdog_pids = [pid | watchdog_pids]
+                Logger.info("Added motor watchdog")
 		{:noreply, watchdog_pids}
 	end
 
@@ -49,28 +50,29 @@ defmodule Watchdog do
 	end
 
 
-	### THE watchdogs ###	
+	### THE watchdogs ###
 
 	defp motor_watchdog() do
-		
+
 		receive do
 			:kill ->
 				GenServer.cast(__MODULE__, {:delete_watchdog_pid, self()})
-				### Set FSM_Malfunction = false? ###
+                                Logger.info("Killing motor watchdog")
+                                FSM.update_malfunction(false)
 		after
 			@motor_time_out ->
-				IO.puts("Something is wrong with the motor")
-				### Set FSM_Malfunction = true? ###
+                                Logger.info("Setting malfunction to true")
+                                FSM.update_malfunction(true)
 		end
 	end
 
 	defp order_watchdog(watch_order, node) do
-		#Avoiding race_conditions by adding a random offset to time_out_val	
+		#Avoiding race_conditions by adding a random offset to time_out_val
 		time_out_val = @order_time_out + :rand.uniform(100)
 
 		{floor, type} = watch_order
 		Logger.info("New watchdog, watching {#{floor}, #{type}} for node: #{node}")
-	
+
 		receive do
 			{:kill, ^watch_order, ^node} ->
 				GenServer.cast(__MODULE__, {:delete_watchdog_pid, self()})
