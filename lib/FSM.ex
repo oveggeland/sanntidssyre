@@ -27,14 +27,6 @@ defmodule FSM do
     GenServer.call(__MODULE__, :get_state)
   end
 
-  defp drive_elevator(direction) do
-    GenServer.cast(__MODULE__, {:drive_elevator, direction})
-  end
-
-  defp drive_elevator(goal_floor, current_floor) do
-    direction = find_direction(current_floor, goal_floor)
-    GenServer.cast(__MODULE__, {:drive_elevator, direction})
-  end
 
   def update_floor(floor) do
     GenServer.cast(__MODULE__, {:update, floor})
@@ -86,34 +78,25 @@ defmodule FSM do
 
   def handle_cast(:run_FSM, state) do
     {current_floor, goal_floor, door_open, malfunction} = state
-    new_state = cond do
+
+    new_goal_floor = cond do
       door_open == true -> #door open do nothing
-        {current_floor, goal_floor, door_open, malfunction}
+        goal_floor
 
       goal_floor != :nil ->
-        drive_elevator(goal_floor, current_floor)
-        {current_floor, goal_floor, door_open, malfunction}
+        drive_elevator(find_direction(current_floor, goal_floor))
+        goal_floor
 
-      goal_floor == :nil -> #State is idle
-        if Orders.get_next_order() != :nil do
-          {new_goal_floor, _} = Orders.get_next_order()
-          GenServer.cast(Watchdog, :spawn_motor_watchdog)
-          {current_floor, new_goal_floor, door_open, malfunction}
-        else
-          {current_floor, goal_floor, door_open, malfunction}
-        end
+      goal_floor == :nil && Orders.get_next_order() != :nil -> #State is idle
+        {new_goal_floor, _} = Orders.get_next_order()
+        GenServer.cast(Watchdog, :spawn_motor_watchdog)
+        new_goal_floor
 
       true ->
-        {current_floor, goal_floor, door_open, malfunction}
+        goal_floor
     end
 
-    {:noreply, new_state}
-  end
-
-  def handle_cast({:drive_elevator, direction}, state) do
-    {floor, goal_floor, door_open, malfunction} = state
-    Driver.set_motor_direction(:elevpid, direction)
-    {:noreply, {floor, goal_floor, door_open, malfunction}}
+    {:noreply, {current_floor, new_goal_floor, door_open, malfunction}}
   end
 
   def handle_cast(:open_door, state) do
@@ -158,4 +141,9 @@ defmodule FSM do
         :up
     end
   end
+
+  defp drive_elevator(direction) do
+    Driver.set_motor_direction(:elevpid, direction)
+  end
+
 end
