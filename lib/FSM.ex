@@ -14,7 +14,7 @@ defmodule FSM do
 
   def init([:elevpid]) do #structen er {floor, goal_floor, door_open, malfunction}
     spawn_link(fn -> run_FSM() end)
-    {:ok, {:nil, :nil, false, false}}
+    {:ok, {3, 0, false, false}}
   end
 
   def run_FSM() do
@@ -28,6 +28,11 @@ defmodule FSM do
   end
 
   defp drive_elevator(direction) do
+    GenServer.cast(__MODULE__, {:drive_elevator, direction})
+  end
+
+  defp drive_elevator(goal_floor, current_floor) do
+    direction = find_direction(current_floor, goal_floor)
     GenServer.cast(__MODULE__, {:drive_elevator, direction})
   end
 
@@ -85,19 +90,17 @@ defmodule FSM do
       door_open == true -> #door open do nothing
         {current_floor, goal_floor, door_open, malfunction}
 
-      current_floor == :nil -> #Uninitialized
-        {3, 0, door_open, malfunction}
-
       goal_floor != :nil ->
-        handle_order(goal_floor, current_floor)
+        drive_elevator(goal_floor, current_floor)
+        {current_floor, goal_floor, door_open, malfunction}
 
       goal_floor == :nil -> #State is idle
         if Orders.get_next_order() != :nil do
           {new_goal_floor, _} = Orders.get_next_order()
           GenServer.cast(Watchdog, :spawn_motor_watchdog)
-          handle_order(new_goal_floor, current_floor)
+          {current_floor, new_goal_floor, door_open, malfunction}
         else
-          {current_floor, :nil, door_open, malfunction}
+          {current_floor, goal_floor, door_open, malfunction}
         end
 
       true ->
@@ -144,19 +147,6 @@ defmodule FSM do
 
   end
 
-  defp handle_order(goal_floor, current_floor) do
-    cond do
-      goal_floor > current_floor ->
-        drive_elevator(:up)
-
-      goal_floor < current_floor ->
-        drive_elevator(:down)
-
-      true ->
-        Logger.info("Error")
-    end
-    {current_floor, goal_floor, false, false}
-  end
 
   defp find_direction(old_floor, new_floor) do
     cond do
