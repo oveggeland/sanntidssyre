@@ -5,7 +5,6 @@ defmodule FSM do
   #Constants
   def door_open_time, do: 1000
 
-
   #User API
   def start_link([elevatorpid]) do
     Process.register(elevatorpid, :elevpid)
@@ -17,16 +16,9 @@ defmodule FSM do
     {:ok, {3, 0, false, false}}
   end
 
-  def run_FSM() do
-    GenServer.cast(__MODULE__, :run_FSM)
-    Process.sleep(100)
-    run_FSM()
-  end
-
   def get_state() do
     GenServer.call(__MODULE__, :get_state)
   end
-
 
   def update_floor(floor) do
     GenServer.cast(__MODULE__, {:update, floor})
@@ -35,12 +27,6 @@ defmodule FSM do
   def update_malfunction(malfunction) do
     GenServer.cast(__MODULE__, {:malfunction, malfunction})
   end
-
-  defp open_and_close_door() do
-    GenServer.cast(__MODULE__, :open_door)
-    spawn(fn -> :timer.sleep(door_open_time()); GenServer.cast(__MODULE__, :close_door) end)
-  end
-
 
   #Call handles
   def handle_call(:get_state, _from, state) do
@@ -130,7 +116,6 @@ defmodule FSM do
 
   end
 
-
   defp find_direction(old_floor, new_floor) do
     cond do
       old_floor == new_floor ->
@@ -145,5 +130,17 @@ defmodule FSM do
   defp drive_elevator(direction) do
     Driver.set_motor_direction(:elevpid, direction)
   end
+
+  defp open_and_close_door() do
+    GenServer.cast(__MODULE__, :open_door)
+    spawn(fn -> :timer.sleep(door_open_time()); GenServer.cast(__MODULE__, :close_door) end)
+  end
+
+  defp run_FSM() do
+    GenServer.cast(__MODULE__, :run_FSM)
+    Process.sleep(100)
+    run_FSM()
+  end
+
 
 end
