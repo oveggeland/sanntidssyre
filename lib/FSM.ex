@@ -5,7 +5,6 @@ defmodule FSM do
   #Constants
   def door_open_time, do: 1000
 
-
   #User API
   def start_link([elevatorpid]) do
     Process.register(elevatorpid, :elevpid)
@@ -14,21 +13,11 @@ defmodule FSM do
 
   def init([:elevpid]) do #structen er {floor, goal_floor, door_open, malfunction}
     spawn_link(fn -> run_FSM() end)
-    {:ok, {:nil, :nil, false, false}}
-  end
-
-  def run_FSM() do
-    GenServer.cast(__MODULE__, :run_FSM)
-    Process.sleep(100)
-    run_FSM()
+    {:ok, {3, 0, false, false}}
   end
 
   def get_state() do
     GenServer.call(__MODULE__, :get_state)
-  end
-
-  defp drive_elevator(direction) do
-    GenServer.cast(__MODULE__, {:drive_elevator, direction})
   end
 
   def update_floor(floor) do
@@ -38,12 +27,6 @@ defmodule FSM do
   def update_malfunction(malfunction) do
     GenServer.cast(__MODULE__, {:malfunction, malfunction})
   end
-
-  defp open_and_close_door() do
-    GenServer.cast(__MODULE__, :open_door)
-    spawn(fn -> :timer.sleep(door_open_time()); GenServer.cast(__MODULE__, :close_door) end)
-  end
-
 
   #Call handles
   def handle_call(:get_state, _from, state) do
@@ -81,36 +64,25 @@ defmodule FSM do
 
   def handle_cast(:run_FSM, state) do
     {current_floor, goal_floor, door_open, malfunction} = state
-    new_state = cond do
-      door_open == true -> #door open do nothing
-        {current_floor, goal_floor, door_open, malfunction}
 
-      current_floor == :nil -> #Uninitialized
-        {3, 0, door_open, malfunction}
+    new_goal_floor = cond do
+      door_open == true -> #door open do nothing
+        goal_floor
 
       goal_floor != :nil ->
-        handle_order(goal_floor, current_floor)
+        drive_elevator(find_direction(current_floor, goal_floor))
+        goal_floor
 
-      goal_floor == :nil -> #State is idle
-        if Orders.get_next_order() != :nil do
-          {new_goal_floor, _} = Orders.get_next_order()
-          GenServer.cast(Watchdog, :spawn_motor_watchdog)
-          handle_order(new_goal_floor, current_floor)
-        else
-          {current_floor, :nil, door_open, malfunction}
-        end
+      goal_floor == :nil && Orders.get_next_order() != :nil -> #State is idle
+        {new_goal_floor, _} = Orders.get_next_order()
+        GenServer.cast(Watchdog, :spawn_motor_watchdog)
+        new_goal_floor
 
       true ->
-        {current_floor, goal_floor, door_open, malfunction}
+        goal_floor
     end
 
-    {:noreply, new_state}
-  end
-
-  def handle_cast({:drive_elevator, direction}, state) do
-    {floor, goal_floor, door_open, malfunction} = state
-    Driver.set_motor_direction(:elevpid, direction)
-    {:noreply, {floor, goal_floor, door_open, malfunction}}
+    {:noreply, {current_floor, new_goal_floor, door_open, malfunction}}
   end
 
   def handle_cast(:open_door, state) do
@@ -144,20 +116,6 @@ defmodule FSM do
 
   end
 
-  defp handle_order(goal_floor, current_floor) do
-    cond do
-      goal_floor > current_floor ->
-        drive_elevator(:up)
-
-      goal_floor < current_floor ->
-        drive_elevator(:down)
-
-      true ->
-        Logger.info("Error")
-    end
-    {current_floor, goal_floor, false, false}
-  end
-
   defp find_direction(old_floor, new_floor) do
     cond do
       old_floor == new_floor ->
@@ -168,4 +126,21 @@ defmodule FSM do
         :up
     end
   end
+
+  defp drive_elevator(direction) do
+    Driver.set_motor_direction(:elevpid, direction)
+  end
+
+  defp open_and_close_door() do
+    GenServer.cast(__MODULE__, :open_door)
+    spawn(fn -> :timer.sleep(door_open_time()); GenServer.cast(__MODULE__, :close_door) end)
+  end
+
+  defp run_FSM() do
+    GenServer.cast(__MODULE__, :run_FSM)
+    Process.sleep(100)
+    run_FSM()
+  end
+
+
 end

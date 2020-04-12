@@ -1,0 +1,37 @@
+# /home/thomas/.tmuxinator/monitor.yml
+
+name: monitor
+root: ~/Downloads/sanntidssyre
+
+windows:
+  - status_things:
+      layout: tiled
+      panes:
+        - simulator1:
+            - sleep 1
+            - cd simulator
+            - ./SimElevatorServer --port 34567
+
+        - iex1:
+            - sleep 1
+            - echo "Heis.start(\"Node1\", 34567)" > .iex.exs
+            - iex -S mix
+        - simulator2:
+            - sleep 2
+            - cd simulator
+            - ./SimElevatorServer --port 34568
+
+        - iex2:
+            - sleep 2
+            - echo "Heis.start(\"Node2\", 34568)" > .iex.exs
+            - iex -S mix
+        - simulator3:
+            - sleep 3
+            - cd simulator
+            - ./SimElevatorServer --port 34569
+
+        - iex3:
+            - sleep 3
+            - echo "Heis.start(\"Node3\", 34569)" > .iex.exs
+            - iex -S mix
+
