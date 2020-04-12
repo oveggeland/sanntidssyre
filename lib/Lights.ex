@@ -1,5 +1,5 @@
 defmodule Lights do
-	use GenServer
+	use GenServer, restart: :permanent
 	require Logger
 
 	@n_floors 4
