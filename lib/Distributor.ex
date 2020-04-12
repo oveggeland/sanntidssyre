@@ -11,11 +11,9 @@ defmodule Distributor do
 	end
 
 
-	## API ##
-
 	def new_order(order, node) do
-		{floor, type} = order
-		Logger.info("New order: {#{floor}, #{type}}")
+		{_floor, type} = order
+	
 		if type == :cab do
 			new_cab_order(order, node)
 		else
@@ -32,27 +30,20 @@ defmodule Distributor do
 	end
 
 	def new_hall_order(order) do
-
 		#Finding optimal elevator to handle order
 		{all_bids, _} = GenServer.multi_call(__MODULE__, {:get_bids, order})
-		Logger.info(all_bids)
 		{lowest_bidder, _} = List.keysort(all_bids, 1) |> List.first()
 
-		#Tell optimal elevator to add order
 		GenServer.cast({Orders, lowest_bidder}, {:add_order, order})
 
-		#Tell all nodes to watch order, returns list of replicants
 		{reply, _} = GenServer.multi_call(Watchdog, {:spawn_order_watchdog, order, lowest_bidder})
-
-		#If a watchdog is spawned, set hall_light
 		if reply != [] do
 			GenServer.abcast(Lights, {:set_order_light, order, :on})
 		end
 	end
 
 	def order_complete(order, node) do
-		{floor, type} = order
-		Logger.info("Order complete: {#{floor}, #{type}}. Node: #{node}")
+		{_floor, type} = order
 
 		GenServer.abcast(Watchdog, {:kill_order_watchdog, order, node})
 		if type == :cab do
@@ -65,39 +56,34 @@ defmodule Distributor do
 	end
 
 
-	## Call handlers
 
 	def handle_call({:get_bids, order}, _from,  nil) do
 		{:reply, calculate_cost(order), nil}
 	end
 
-        defp calculate_cost(order) do
-                {order_floor, _} = order
-
-                truth_map = %{true => 1, false => 0}
-
-                #Retrieving state#
-                orders = Orders.get_orders()
+        defp calculate_cost(new_order) do
+		truth_map = %{true => 1, false => 0}
 
                 {_,_,_,malfunction} = FSM.get_state()
                 digit0 = truth_map[malfunction]
 
-                already_taken = Enum.member?(orders, order)
+                orders = Orders.get_orders()
+                already_taken = Enum.member?(orders, new_order)
                 digit1 = truth_map[!already_taken]
 
-                order_on_the_way =order_on_the_way?(order, FSM.get_state())
+                order_on_the_way =order_on_the_way?(new_order, FSM.get_state())
                 digit2 = truth_map[!order_on_the_way]
 
                 elevator_busy = List.first(orders) != nil
                 digit3 = truth_map[elevator_busy]
 
+                {new_order_floor, _} = new_order
                 {state_floor, _, _, _} = FSM.get_state()
-                distance_to_order = abs(order_floor - state_floor)
+                distance_to_order = abs(new_order_floor - state_floor)
                 digit4 = distance_to_order
+		
 
-                bid = Integer.undigits([digit0, digit1, digit2, digit3, digit4])
-                Logger.info("My bid is #{bid}")
-		bid
+                Integer.undigits([digit0, digit1, digit2, digit3, digit4])
         end
 
         defp order_on_the_way?({order_floor, order_type},{state_floor, goal_floor, _, _}) do

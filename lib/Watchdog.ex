@@ -29,7 +29,6 @@ defmodule Watchdog do
 	def handle_cast(:spawn_motor_watchdog, watchdog_pids) do
 		pid = spawn_link(fn -> motor_watchdog() end)
 		watchdog_pids = [pid | watchdog_pids]
-                Logger.info("Added motor watchdog")
 		{:noreply, watchdog_pids}
 	end
 
@@ -44,6 +43,7 @@ defmodule Watchdog do
 		{:noreply, watchdog_pids}
 	end
 
+
 	def handle_cast({:delete_watchdog_pid, pid}, watchdog_pids) do
 		watchdog_pids = List.delete(watchdog_pids, pid)
 		{:noreply, watchdog_pids}
@@ -57,21 +57,16 @@ defmodule Watchdog do
 		receive do
 			:kill ->
 				GenServer.cast(__MODULE__, {:delete_watchdog_pid, self()})
-                                Logger.info("Killing motor watchdog")
                                 FSM.update_malfunction(false)
 		after
 			@motor_time_out ->
-                                Logger.info("Setting malfunction to true")
                                 FSM.update_malfunction(true)
 		end
 	end
 
 	defp order_watchdog(watch_order, node) do
-		#Avoiding race_conditions by adding a random offset to time_out_val
+		#Adding a random offset to time_out_val, preventing multiple watchdogs finishing at the exact same time
 		time_out_val = @order_time_out + :rand.uniform(100)
-
-		{floor, type} = watch_order
-		Logger.info("New watchdog, watching {#{floor}, #{type}} for node: #{node}")
 
 		receive do
 			{:kill, ^watch_order, ^node} ->
@@ -81,7 +76,6 @@ defmodule Watchdog do
 			time_out_val ->
 				GenServer.abcast(Watchdog, {:kill_order_watchdog, watch_order, node})
 				Distributor.new_order(watch_order, node)
-				Logger.info("Watchdog {#{floor}, #{type}} timed out")
 
 		end
 	end

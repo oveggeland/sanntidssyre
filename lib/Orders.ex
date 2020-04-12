@@ -23,7 +23,7 @@ defmodule Orders do
 	end
 
 
-	### Function used by cost-function in Distributor ###
+	### Function used by cost-function in Distributor module ###
 	def get_orders() do
 		GenServer.call(__MODULE__, :get_orders)
 	end
@@ -50,14 +50,11 @@ defmodule Orders do
 	### Cast handlers ###
 
 	def handle_cast({:add_order, order}, orders) do
-		{floor, type} = order
-		Logger.info("Adding order: {#{floor}, #{type}} to list")
 		orders = [order | orders]
 		{:noreply, orders}
 	end
 
 	def handle_cast({:delete_order, order}, orders) do
-		IO.inspect(order)
 		orders = Enum.filter(orders, fn x -> x != order end)
 		{:noreply, orders}
 	end

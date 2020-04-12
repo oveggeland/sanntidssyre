@@ -6,7 +6,6 @@ defmodule HEIS.Supervisor do
 	end	
 
 	def init([node_name, port]) do
-		IO.puts(port)
 		{:ok, elevPID} = Driver.start({127, 0, 0, 1}, port)
 		children = [
 			{PollerSupervisor, [elevPID]},

@@ -29,10 +29,8 @@ defmodule Cluster do
 	def node_listener(socket) do
 		{:ok, {ip, _port, data}} = :gen_udp.recv(socket, 0)
 		name = to_string(data)
-		ip = 
-		a = get_node_name(name, ip) 
-		IO.inspect(a)
-		#|> Node.ping()
+		ip = :inet.ntoa(ip) |> to_string() 
+		get_node_name(name, ip) |> Node.ping()
 
 		node_listener(socket)
 	end

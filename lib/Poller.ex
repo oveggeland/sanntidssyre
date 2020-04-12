@@ -1,5 +1,5 @@
 defmodule PollerSupervisor do
-	use Supervisor
+	use Supervisor, restart: :permanent
 	require Logger
 
 	@n_floors 4
@@ -51,7 +51,6 @@ defmodule FloorPoller do
 
 		floor_sensor = Driver.get_floor_sensor_state(elevPID)
 		if floor_sensor != :between_floors do
-			#Logger.info("At floor #{floor_sensor}")	
 	               	FSM.update_floor(floor_sensor)
 		end
 
