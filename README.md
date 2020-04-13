@@ -1,21 +1,19 @@
-# HEIS
+Installation guide
 
-**TODO: Add description**
-
-## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `heis` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:heis, "~> 0.1.0"}
-  ]
-end
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/heis](https://hexdocs.pm/heis).
-
+sudo apt install tmux 
+sudo gem install tmuxinator 
+```
+Change the following line to your working directory:
+```
+root: ~/Documents/sanntidssyre
+```
+Then create a folder for the tmuxinator setup and move the monitor.yml there
+```
+mkdir ~/.tmuxinator
+mv monitor.yml ~/.tmuxinator/
+```
+Then all thats needed to run the elavator is
+```
+tmuxinator monitor
+```
