@@ -6,7 +6,7 @@ defmodule Cluster do
 
 
 	def start_link([name]) do
-		get_node_name(name) |> Node.start()
+		get_node_name(name) |> Node.start(:longnames, 1000)
 		Node.set_cookie(:safari)
 		Task.start_link(fn -> connect_to_cluster(name) end)
 	end
