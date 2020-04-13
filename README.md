@@ -2,7 +2,7 @@ Installation guide
 
 ```
 sudo apt install tmux 
-sudo gem install tmuxinator 
+sudo apt install tmuxinator 
 ```
 Change the following line to your working directory:
 ```
