@@ -4,7 +4,7 @@ Installation guide
 sudo apt install tmux 
 sudo apt install tmuxinator 
 ```
-Change the following line to your working directory:
+Change the following line of the monitor.yml file to your working directory:
 ```
 root: ~/Documents/sanntidssyre
 ```
